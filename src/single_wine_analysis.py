@@ -7,13 +7,16 @@ stationarity of the series. This code is an initial approach but its use might b
 the future.
 """
 
+import itertools
 from datetime import datetime as dt
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.stattools import adfuller, kpss
+
 sns.set()
 
 plt.rcParams['axes.labelsize'] = 14
@@ -29,6 +32,7 @@ raw_data = pd.read_csv("../data/AustralianWines.csv")
 # pre-processing
 raw_data['Month'] = raw_data['Month'].apply(lambda x: dt.strptime(str(x), '%b-%y'))
 raw_data.set_index(raw_data['Month'], inplace=True)
+raw_data.index.freq = raw_data.index.inferred_freq
 wine_names = [column_name for column_name in raw_data.columns if column_name != "Month"]
 for wine_name in wine_names:
     raw_data[wine_name] = pd.to_numeric(raw_data[wine_name], errors='coerce')
@@ -38,8 +42,12 @@ for wine_name in wine_names:
 wine_name = wine_names[0]
 data_selected = raw_data[wine_name]
 
+
+# the tests modes, for kpss only the first two are possible
+test_modes = ['c', 'ct', 'ctt', 'nc']
+
 # performs the Augmented Dickey-Fuller unit root test for stationarity
-adf_stat, p_value_adf, _, _, critical_vals_adf, _ = adfuller(data_selected, regression='ct')
+adf_stat, p_value_adf, _, _, critical_vals_adf, _ = adfuller(data_selected, regression=test_modes[1])
 
 print('ADF Statistic: %f' % adf_stat)
 print('p-value: %f' % p_value_adf)
@@ -48,7 +56,7 @@ for key, value in critical_vals_adf.items():
     print('\t%s: %.3f' % (key, value))
 
 # performs the Kwiatkowski-Phillips-Schmidt-Shin test for stationarity
-kpss_stat, p_value_kpss, _, critical_vals_kpss = kpss(data_selected, regression='ct', nlags='auto')
+kpss_stat, p_value_kpss, _, critical_vals_kpss = kpss(data_selected, regression=test_modes[1], nlags='auto')
 
 print('KPSS Statistic: %f' % kpss_stat)
 print('p-value: %f' % p_value_kpss)
@@ -67,10 +75,40 @@ ax_big = fig.add_subplot(gs[0, :])
 # visualizing the time series of the selected wine
 data_selected.plot(ax=ax_big)
 ax_big.set(xlabel='Date', ylabel='Trade units',
-           title=(wine_name+'\n Dickey-Fuller: p={0:.5f} | KPSS: p={1:.5f}'.format(p_value_adf, p_value_kpss)))
+           title=(wine_name + '\n Dickey-Fuller: p={0:.5f} | KPSS: p={1:.5f}'.format(p_value_adf, p_value_kpss)))
 
 # visualizing both the auto-correlation and partial auto-correlation functions
-plot_acf(data_selected, lags=int(len(data_selected)/3), ax=axs[1, 0])
-plot_pacf(data_selected, lags=int(len(data_selected)/3), ax=axs[1, 1])
+plot_acf(data_selected, lags=int(len(data_selected) / 3), ax=axs[1, 0])
+plot_pacf(data_selected, lags=int(len(data_selected) / 3), ax=axs[1, 1])
 plt.tight_layout()
 plt.show()
+
+# parameters grid both regular (p,d,q) and seasonal (P,D,Q)m
+p = P = [0, 1, 2]
+q = Q = [0, 1, 2]
+d = D = [0, 1, 2]
+m = [12]
+pdqPDQm = list(itertools.product(p, d, q, P, D, Q, m))
+
+# we load list of parameters already tried
+with open('../data/parameters_tried.txt', 'r') as f:
+    params_tried = [eval(line.replace('\n', '')) for line in f]
+
+# eliminate params that have already been used for training
+pdqPDQm = list(set(pdqPDQm) ^ set(params_tried))
+
+# model fitting and evaluation
+for params in pdqPDQm:
+    try:
+        mod = sm.tsa.statespace.SARIMAX(data_selected, order=params[:3], seasonal_order=params[3:],
+                                        enforce_stationarity=False, enforce_invertibility=False)
+        results = mod.fit(maxiter=200, disp=False)
+        print('ARIMA{}x{}{} - AIC:{}'.format(params[:3], params[3:6], params[6], results.aic))
+        params_tried.append(params)
+    except Exception:
+        continue
+
+with open('../data/parameters_tried.txt', 'w') as f:
+    f.write('\n'.join('{}'.format(x) for x in params_tried+pdqPDQm))
+
+# TODO: save AIC values that are being printed, into other file with format (params, AIC) to select best model after
