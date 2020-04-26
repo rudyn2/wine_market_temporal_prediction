@@ -1,0 +1,202 @@
+TIME SERIES
+
+A Time Series (TS) is a series of data points indexed (or listed or graphed) in time order. Most commonly, a time series is a sequence taken at successive equally spaced points in time. Thus it is a sequence of discrete-time data.
+
+An autocorrelation plot shows the properties of a type of data known as a time series. An autocorrelation plot is designed to show whether the elements of a time series are positively correlated, negatively correlated, or independent of each other.
+Cross-sectional data refers to observations on many variables at a single point in time.
+
+Time Series Modeling, as the name suggests, it involves working on time (years, days, hours, minutes) based data, to derive hidden insights to make informed decision making and are very useful models when you have serially correlated data.
+
+Time Series forecasting is the use of a model to predict future values based on previously observed values.
+
+Time Series analysis comprises methods for analyzing time series data in order to extract meaningful statistics and other characteristics of the data. Time series forecasting is the use of a model to predict future values based on previously observed values.
+
+There are two things that makes a TS different from say a regular regression problem:
+	-It is time dependent. So the basic assumption of a linear regression model that the observations are independent doesn’t hold in this case.
+	-Along with an increasing or decreasing trend, most TS have some form of seasonality trends, i.e. variations specific to a particular time frame.
+
+Forecast quality metrics:
+	- R squared: coefficient of determination (in econometrics it can be interpreted as a percentage of variance explained by the model), (-inf, 1]
+	- Mean Absolute Error: it is an interpretable metric because it has the same unit of measurement as the initial series, [0, +inf)
+	- Median Absolute Error: again an interpretable metric, particularly interesting because it is robust to outliers, [0, +inf)
+	- Mean Squared Error: most commonly used, gives higher penalty to big mistakes and vice versa, [0, +inf)
+	- Mean Squared Logarithmic Error, practically the same as MSE but we initially take logarithm of the series, as a result we give attention to small mistakes as well, usually is used when data has exponential trends, [0, +inf)
+
+	Getting this directly from sklear with:
+
+	from sklearn.metrics import r2_score,
+								median_absolute_error,
+								mean_absolute_error,
+								median_absolute_error, 
+								mean_squared_error, 
+								mean_squared_log_error
+
+Stationarity:
+
+	A stationary series is one in which the properties — mean, variance and covariance, do not vary with time. Most statistical models require the series to be stationary to make effective and precise predictions. So the three basic criterion for a series to be classified as stationary series are:
+		1. The mean of the series should not be a function of time rather should be a constant.
+		2. The variance of the series should not be a function of time. This property is known as homoscedasticity.
+		3. The covariance of the ith term and the (i + m)th term should not be a function of time.
+
+Methods to determine whether a given series is stationary or not and deal with it accordingly:
+
+	1. Visual test: We can plot the data and determine if the properties of the series are changing with time or not. The visual approach might not always give accurate results. It is better to confirm the observations using some statistical tests.
+	2. Statistical test: We can use statistical tests like the unit root stationary tests. Unit root indicates that the statistical properties of a given series are not constant with time, which is the condition for stationary time series. Some test based on unit root are:
+		* ADF (Augmented Dickey Fuller) Test
+		* KPSS (Kwiatkowski-Phillips-Schmidt-Shin) Test
+
+Types of Stationarity
+	- Strict Stationary: For a strict stationary series, the mean, variance and covariance are not the function of time.
+	- Trend Stationary: A series that has no unit root but exhibits a trend is referred to as a trend stationary series.
+	The KPSS test classifies a series as stationary on the absence of unit root, which means it could be either trend or strict stationary.
+	- Difference Stationary: A time series that can be made strict stationary by differencing falls under difference stationary. ADF test is also known as a difference stationarity test.
+
+	It’s always better to apply both the tests, so that we are sure that the series is truly stationary. Cases given the tests results:
+		1) Both negative --> not stationary
+		2) Both stationary --> stationary
+		3) KPSS and not ADF --> trend stationary
+		4) not KPSS and ADF --> difference stationary
+
+Making a Time Series Stationary
+
+	In order to use time series forecasting models, it is necessary to convert any non-stationary series to a stationary series first. There are 2 major reasons behind non-stationarity of a TS:
+		1. Trend — varying mean over time.
+		2. Seasonality — variations at specific time-frames.
+
+	Differencing
+		In this method, we compute the difference of consecutive terms in the series.
+		--> y'(t) = y(t) - y(t-1)
+
+	Seasonal Differencing
+		In seasonal differencing, we calculate the difference between an observation and a previous observation from the same season.
+		--> y'(t) = y(t) - y(t-n)
+
+	Both of this are mainly used to get rid of the varying mean of a TS.
+
+	Transformation
+		Transformations are used to stabilize the non-constant variance of a series. Common transformation methods include power transform, square root, and log transform.
+
+
+Time Series Forecasting Methods
+
+	1) Auto-Regression (AR)
+	2) Moving Average (MA)
+	3) Autoregressive Moving Average (ARMA)
+	4) Auto-Regressive Integrated Moving Average (ARIMA)
+	5) Seasonal Auto-Regressive Integrated Moving-Average (SARIMA)
+	6) Seasonal Auto-Regressive Integrated Moving-Average with Exogenous Regressors (SARIMAX)
+	7) Vector Auto-Regression (VAR)
+	8) Vector Auto-Regression Moving-Average (VARMA)
+	9) Vector Auto-Regression Moving-Average with Exogenous Regressors (VARMAX)
+	10) Simple Exponential Smoothing (SES)
+	11) Holt Winter’s Exponential Smoothing (HWES)
+
+	Time Series Models must deal with:
+		* Trends
+			- Long-term movement
+		* Seasonality
+			- Short-term regular and repetitive variations in data
+		* Cyclical
+			- Longer term with duration at least a year and varies from cycle to cycle.
+		* Random
+			- Can't be explained by the former three, caused by chance.
+
+
+1) Auto-Regression(AR)
+	The Auto-Regression (AR) method models the next step in the sequence as a linear function of the observations at prior time steps, plus white noise (e(t)), also considering an order "p":
+
+	* x(t) = c + sum(b_i*x(t-i), i=1 to p) + e(t)
+
+
+2) Moving Average (MA)
+	The moving average (MA) method models the next step in the sequence as a linear function of the residual errors from a mean process at prior time steps. Also considers an order "q", and white noise e(t):
+
+	* x(t) = u + e(t) + th_1*e(t-1) + ... + th_q*e(t-q)
+
+
+3) Autoregressive Moving Average (ARMA)
+	The Autoregressive Moving Average (ARMA) method models the next step in the sequence as a linear function of the observations and residual errors at prior time steps. It combines both Auto-Regression (AR) and Moving Average (MA) models. It must be specified both "p" for AR and "q" for MA, yielding ARMA(p,q):
+
+	* x(t)=sum(b_i*x(t-i), i=1 to p) + sum(th_i*e(t-i), i=1 to q) +c+e(t)
+
+
+4) Auto-Regressive Integrated Moving Average (ARIMA)
+	The Autoregressive Integrated Moving Average (ARIMA) method models the next step in the sequence as a linear function of the differenced observations and residual errors at prior time steps. It combines both Auto-Regression (AR) and Moving Average (MA) models as well as a differencing pre-processing step of the sequence to make the sequence stationary, called integration (I).
+
+	The notation for the model involves specifying the order for the AR(p), I(d), and MA(q) models as parameters to ARIMA(p, d, q).
+
+	This can be viewed as applying an ARMA)(p,q) model to a differentiation of order "d" of the original TS. To see the this matematically, lets consider the lag operator L^i, and it works as:
+
+	L^{1}*x(t) = x(t-1) ; L^{2}*x(t) = x(t-2) ; --- ; L^{i}*x(t) = x(t-i) 
+
+	With this the ARIMA(p,d,q) can be written as:
+
+	* (1 - sum(b_i*L^{i}, i=1 to p))*(1-L)^{d}*x(t) = 
+		c + (1 + sum(th_i*L^{i}, i=1 to q))*e(t)
+
+
+5) Seasonal Auto-Regressive Integrated Moving-Average (SARIMA)
+	The Seasonal Auto-Regressive Integrated Moving Average (SARIMA) method models the next step in the sequence as a linear function of the differenced observations, errors, differenced seasonal observations, and seasonal errors at prior time steps.
+	It combines the ARIMA model with the ability to perform the same auto-Regression, differencing, and moving average modeling at the seasonal level.
+	The notation for the model involves specifying the order for the AR(p), I(d), and MA(q) models as parameters to an ARIMA function and AR(P), I(D), MA(Q) and m parameters at the seasonal level, e.g. SARIMA(p, d, q)(P, D, Q)m where “m” is the number of time steps in each season (the seasonal period).
+
+	A simpler approach, and one which works well in practice, is to model
+	the regular and seasonal dependence separately, and then construct the model incorporating both multiplicatively. Thus a multiplicative seasonal ARIMA model is obtained which has the form:
+
+	* PHI_P(L^m)*phi_p(L)*dif_m^D*dif^d*x(t) = th_q(L)TH_Q(L^m)*e(t)
+
+	Where each term used is given by:
+
+	Seasonal AR of order P:
+	PHI_P(L^m) = (1 - sum(b'_i*L^{m*i}, i=1 to P))
+
+	Regular AR of order p:
+	phi_p(L) = (1 - sum(b_i*L^{i}, i=1 to p))
+
+	Seasonal differences:
+	dif_m^D = (1 - L^m)^D
+
+	Regular Differences:
+	dif^d = (1 - L)^d
+
+	Seasonal moving average of order Q:
+	TH_Q(L^m) = (1 + sum(TH_i*L^{m*i}, i=1 to Q))
+
+	Regular moving average of order q:
+	th_q(L) = (1 + sum(th_i*L^{i}, i=1 to q))
+
+
+6) Seasonal Auto-Regressive Integrated Moving-Average with Exogenous Regressors (SARIMAX)
+	Is an extension of the SARIMA model that also includes the modeling of exogenous variables. Exogenous variables are also called covariates and can be thought of as parallel input sequences that have observations at the same time steps as the original series.
+
+7) Vector Auto-Regression (VAR)
+8) Vector Auto-Regression Moving-Average (VARMA)
+9) Vector Auto-Regression Moving-Average with Exogenous Regressors (VARMAX)
+
+This three methods 7), 8) and 9) are applications of the former explained methods but with a vectorial TS, i.e. a vector where each component is a TS itself.
+
+10) Simple Exponential Smoothing (SES)
+	The Simple Exponential Smoothing (SES) method models the next time step as an exponentially weighted linear function of observations at prior time steps.
+
+	Let's consider the data {x(t)}, then the output of the SES {s(t)} is:
+
+	* s(t) = a*x(t) + (1-a)*s(t-1) , s(0) = x(0),  0 < a < 1
+
+11) Holt Winter’s Exponential Smoothing (HWES)
+	Also called the Triple Exponential Smoothing method models the next time step as an exponentially weighted linear function of observations at prior time steps, taking trends and seasonality into account.
+
+	Suppose we have a sequence of observations {x(t)}, beginning at time t = 0 with a cycle of seasonal change of length L.
+
+	The method calculates a trend line for the data as well as seasonal indices that weight the values in the trend line based on where that time point falls in the cycle of length L.
+
+	{s(t)} represents the smoothed value of the constant part for time t. {b(t)} represents the sequence of best estimates of the linear trend that are superimposed on the seasonal changes. {c(t)} is the sequence of seasonal correction factors. c(t) is the expected proportion of the predicted trend at any time (t mod L) in the cycle that the observations take on. As a rule of thumb, a minimum of two full seasons (or 2L periods) of historical data is needed to initialize a set of seasonal factors.
+
+	The output of the algorithm is again written as F(t+m), an estimate of the value of x at time t+m, m>0 based on the raw data up to time t.
+
+	* s(t) = a*(x(t)/c(t-L)) + (1-a)*(s(t-1)+b(t-1)) , s(0) = x(0)
+	* b(t) = k*(s(t)-s(t-1)) + (1-k)*b(t-1)
+	* c(t) = r*(x(t)/s(t)) + (1-r)*c(t-L)
+
+	* F(t+m) = (s(t)+m*b(t))*c([t-L+1+(m-1)] mod L)
+
+	where a is the data smoothing factor, 0 < a < 1, k is the trend smoothing factor, 0 < k < 1, and r is the seasonal change smoothing factor, 0 < r < 1.
