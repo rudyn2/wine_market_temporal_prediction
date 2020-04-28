@@ -24,7 +24,7 @@ plt.rcParams['font.size'] = 14
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12
 
-__author__ = "Tomás Saldivia A."
+__author__ = "Tomás Saldivia A., Rudy García A."
 
 # importing files
 raw_data = pd.read_csv("../data/AustralianWines.csv")
@@ -91,24 +91,27 @@ m = [12]
 pdqPDQm = list(itertools.product(p, d, q, P, D, Q, m))
 
 # we load list of parameters already tried
-with open('../data/parameters_tried.txt', 'r') as f:
-    params_tried = [eval(line.replace('\n', '')) for line in f]
+try:
+    with open('../data/parameters_tried.txt', 'r') as f:
+        params_tried = [eval(line.replace('\n', '').split("&&")[0]) for line in f]
+    # eliminate params that have already been used for training
+    pdqPDQm = list(set(pdqPDQm) ^ set(params_tried))
+except FileNotFoundError:
+    print("Parameters tried file not found")
+    pdqPDQm = list(set(pdqPDQm))
+    params_tried = []
 
-# eliminate params that have already been used for training
-pdqPDQm = list(set(pdqPDQm) ^ set(params_tried))
+print("\nFitting SARIMAX\n")
 
 # model fitting and evaluation
-for params in pdqPDQm:
-    try:
-        mod = sm.tsa.statespace.SARIMAX(data_selected, order=params[:3], seasonal_order=params[3:],
-                                        enforce_stationarity=False, enforce_invertibility=False)
-        results = mod.fit(maxiter=200, disp=False)
-        print('ARIMA{}x{}{} - AIC:{}'.format(params[:3], params[3:6], params[6], results.aic))
-        params_tried.append(params)
-    except Exception:
-        continue
+with open('../data/parameters_tried.txt', 'a') as f:
+    for params in pdqPDQm[:2]:
+        try:
+            mod = sm.tsa.statespace.SARIMAX(data_selected, order=params[:3], seasonal_order=params[3:],
+                                            enforce_stationarity=False, enforce_invertibility=False)
+            results = mod.fit(maxiter=200, disp=False)
+            print(f'SARIMAX: {params[:3]}x{params[3:6]}{params[6]} - AIC:{results.aic}')
+            f.write(f"{params} && AIC: {results.aic}\n")
+        except Exception:
+            continue
 
-with open('../data/parameters_tried.txt', 'w') as f:
-    f.write('\n'.join('{}'.format(x) for x in params_tried+pdqPDQm))
-
-# TODO: save AIC values that are being printed, into other file with format (params, AIC) to select best model after
