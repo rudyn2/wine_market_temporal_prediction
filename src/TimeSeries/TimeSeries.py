@@ -36,19 +36,24 @@ class TimeSeries:
             self._data[col_name] = pd.to_numeric(self._data[col_name], errors='coerce')
             self._data[col_name].interpolate(method='time', inplace=True)
 
-    def __getitem__(self, item):
-        return self._data[item]
+    @staticmethod
+    def _get_customized_figure():
+        """
+        This method should work as a style template for all the plots.
+        """
+        fig, ax = plt.subplots()
+        return fig, ax
 
-    def plot_serie(self, name: str):
+    def plot_serie(self, name: str, ax: plt.Axes, start: str):
         """
         Plots a temporal serie.
 
         :param name:                    Name of the serie that wants to be plotted.
+        :param ax:                      Matplotlib axis where data will be plotted.
+        :param start:                         String representation of a date from which predict.
         """
-        self._data[name].plot()
-        plt.ylabel(name)
-        plt.xlabel('Date')
-        plt.show()
+        self._data[name][start:].plot(ax=ax, label='Observations')
+        ax.legend()
 
     def col_names(self) -> List[str]:
         return self._col_names
@@ -58,6 +63,9 @@ class TimeSeries:
 
     def __len__(self) -> int:
         return len(self._data)
+
+    def __getitem__(self, item):
+        return self._data[item]
 
 
 if __name__ == '__main__':
