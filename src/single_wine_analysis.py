@@ -105,7 +105,7 @@ print("\nFitting SARIMAX\n")
 
 # model fitting and evaluation
 with open('../data/parameters_tried.txt', 'a') as f:
-    for params in pdqPDQm[:2]:
+    for params in pdqPDQm:
         try:
             mod = sm.tsa.statespace.SARIMAX(data_selected, order=params[:3], seasonal_order=params[3:],
                                             enforce_stationarity=False, enforce_invertibility=False)
