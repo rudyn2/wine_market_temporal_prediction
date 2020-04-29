@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import List
 import matplotlib.pyplot as plt
+from typing import List, Tuple
 
 
 class TimeSeries:
@@ -35,6 +36,19 @@ class TimeSeries:
         for col_name in self._col_names:
             self._data[col_name] = pd.to_numeric(self._data[col_name], errors='coerce')
             self._data[col_name].interpolate(method='time', inplace=True)
+
+    def timeseries_to_supervised(self, name, lag=1, width=4, pred_width=2) -> Tuple[List[pd.Series], List[float]]:
+        series = self._data[name].copy()
+        dataset_x = []
+        dataset_y = []
+
+        for index in range(len(series)-width-lag-pred_width+1):
+            x_element = series.iloc[index:index+width]
+            y_element = series.iloc[index+width+lag:index+width+lag+pred_width]
+            dataset_x.append(x_element)
+            dataset_y.append(y_element)
+
+        return dataset_x, dataset_y
 
     @staticmethod
     def _get_customized_figure():
@@ -73,4 +87,4 @@ if __name__ == '__main__':
     t.load(file_path='/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv',
            index_col='Month')
     t.info()
-    t.plot_serie('Red ')
+    x, y = t.timeseries_to_supervised('Red ', lag=0, width=1, pred_width=1)
