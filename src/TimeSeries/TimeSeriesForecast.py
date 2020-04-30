@@ -1,6 +1,7 @@
-from src.TimeSeries.TimeSeries import TimeSeries
-import statsmodels.api as sm
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
+
+from src.TimeSeries.TimeSeries import TimeSeries
 
 
 class ResultsNotFound(Exception):
@@ -102,7 +103,3 @@ if __name__ == '__main__':
     fig, ax = t.plot_forecast(name, start='1993-01-01', end='1995-02-01', forecast_label='Forecast')
     t.plot_serie(name, ax, start='1992-01-01')
     plt.show()
-
-
-
-

@@ -42,7 +42,6 @@ for wine_name in wine_names:
 wine_name = wine_names[0]
 data_selected = raw_data[wine_name]
 
-
 # the tests modes, for kpss only the first two are possible
 test_modes = ['c', 'ct', 'ctt', 'nc']
 
@@ -114,4 +113,3 @@ with open('../data/parameters_tried.txt', 'a') as f:
             f.write(f"{params} && AIC: {results.aic}\n")
         except Exception:
             continue
-

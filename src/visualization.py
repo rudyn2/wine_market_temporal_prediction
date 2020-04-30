@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 from datetime import datetime as dt
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
 sns.set()
 
 # importing files

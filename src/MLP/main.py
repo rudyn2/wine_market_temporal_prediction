@@ -1,17 +1,16 @@
 import torch
 import torch.nn as nn
+from sklearn.model_selection import train_test_split
+
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
 from src.TimeSeries.TimeSeries import TimeSeries
-from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
-
 
 if __name__ == '__main__':
     model_path = '/Users/rudy/Documents/wine_market_temporal_prediction/data/model.pt'
     input_size = 12
     output_size = 1
-    name='Red '
+    name = 'Red '
 
     model: nn.Module = MLP(input_size, output_size)
     model.load_state_dict(torch.load(model_path))
@@ -25,7 +24,7 @@ if __name__ == '__main__':
 
     # split
     X_train, X_valid, y_train, y_valid, x_index_train, x_valid_index, y_train_index, y_index_val = \
-         train_test_split(x, y, x_index, y_index, test_size=1/8, random_state=42, shuffle=False)
+        train_test_split(x, y, x_index, y_index, test_size=1 / 8, random_state=42, shuffle=False)
 
     X_train = torch.from_numpy(X_train).float()  # convert to tensors
     y_train = torch.from_numpy(y_train).float()
@@ -50,6 +49,3 @@ if __name__ == '__main__':
     # axs[0].plot(x_index_train, X_train)
     #
     # y_valid_pred = eval_valid(model, dataset=X_valid)
-
-
-

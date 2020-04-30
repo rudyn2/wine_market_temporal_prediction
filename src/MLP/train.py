@@ -1,16 +1,12 @@
-import torch
-import numpy as np
-import pandas as pd
-import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-from sklearn.model_selection import train_test_split
-from src.TimeSeries.TimeSeries import TimeSeries
 import matplotlib.pyplot as plt
-from src.MLP.mlp_models import MLP, WineDataset
+import numpy as np
+import torch
+from sklearn.model_selection import train_test_split
+
+from src.TimeSeries.TimeSeries import TimeSeries
 
 
 def train(model, optimizer, loss_fn, train_loader, valid_loader, epochs: int = 10):
-
     mean_train_losses = []
     mean_valid_losses = []
 
@@ -22,7 +18,6 @@ def train(model, optimizer, loss_fn, train_loader, valid_loader, epochs: int = 1
 
         # train step
         for i, (input_seq, output_seq) in enumerate(train_loader):
-
             optimizer.zero_grad()
             outputs = model(input_seq)
             loss = loss_fn(outputs, output_seq)
@@ -49,7 +44,6 @@ def train(model, optimizer, loss_fn, train_loader, valid_loader, epochs: int = 1
 
 
 if __name__ == '__main__':
-
     i_shape = 12
     o_shape = 1
 
@@ -61,7 +55,7 @@ if __name__ == '__main__':
 
     # split
     X_train, X_valid, y_train, y_valid, x_index_train, x_valid_index, y_train_index, y_index_val = \
-        train_test_split(x, y, x_index, y_index, test_size=1/8, random_state=42, shuffle=False)
+        train_test_split(x, y, x_index, y_index, test_size=1 / 8, random_state=42, shuffle=False)
 
     fig, axs = plt.subplots(nrows=2, ncols=1)
     axs[0].plot(x_index_train, X_train)

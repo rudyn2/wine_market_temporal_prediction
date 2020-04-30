@@ -1,8 +1,9 @@
-import pandas as pd
-import matplotlib.pyplot as plt
 from typing import List, Tuple
-from sklearn.preprocessing import MinMaxScaler
+
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 
 
 class TimeSeries:
@@ -44,7 +45,8 @@ class TimeSeries:
             self._data[col_name].interpolate(method='time', inplace=True)
         self._data.drop(columns=[self._index_name], inplace=True)
 
-    def timeseries_to_supervised(self, name: str, lag: int = 1, width: int  =4, pred_width: int = 2) -> Tuple[pd.DataFrame, pd.DataFrame, list, list]:
+    def timeseries_to_supervised(self, name: str, lag: int = 1, width: int = 4, pred_width: int = 2) -> Tuple[
+        pd.DataFrame, pd.DataFrame, list, list]:
         """
         Transform the data from temporal series to (x, y) supervised data. It returns two numpy arrays with data.
 
@@ -64,13 +66,13 @@ class TimeSeries:
         dataset_x_index = []
         dataset_y_index = []
 
-        for index in range(len(series)-width-lag-pred_width+1):
-            x_element = series.iloc[index:index+width]
-            y_element = series.iloc[index+width+lag:index+width+lag+pred_width]
+        for index in range(len(series) - width - lag - pred_width + 1):
+            x_element = series.iloc[index:index + width]
+            y_element = series.iloc[index + width + lag:index + width + lag + pred_width]
             dataset_x.append(np.array(x_element))
             dataset_y.append(np.array(y_element))
-            dataset_x_index.append(series.index[index:index+width])
-            dataset_y_index.append(series.index[index+width+lag:index+width+lag+pred_width])
+            dataset_x_index.append(series.index[index:index + width])
+            dataset_y_index.append(series.index[index + width + lag:index + width + lag + pred_width])
 
         return np.array(dataset_x), np.array(dataset_y), dataset_x_index, dataset_y_index
 
@@ -94,7 +96,7 @@ class TimeSeries:
         """
         self._data.fillna(value=self._diff_init_values, inplace=True)
         for i in range(self._diff_interval, len(self._data)):
-            self._data.iloc[i, :] = self._data.iloc[i, :] + self._data.iloc[i-self._diff_interval, :]
+            self._data.iloc[i, :] = self._data.iloc[i, :] + self._data.iloc[i - self._diff_interval, :]
         self._diff_init_values = None
         self._diff_interval = 0
         return self.copy()

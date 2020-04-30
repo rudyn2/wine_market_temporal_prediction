@@ -1,6 +1,9 @@
-from src.TimeSeries.TimeSeries import TimeSeries
-from statsmodels.tsa.stattools import adfuller, kpss
 import pprint
+
+from statsmodels.tsa.stattools import adfuller, kpss
+
+from src.TimeSeries.TimeSeries import TimeSeries
+
 
 # TODO: Check if package indexing is generalizable
 
@@ -12,7 +15,6 @@ class TimeSeriesAnalysis(TimeSeries):
         self.__stats = {}
 
     def stats(self, name: str):
-
         assert name in self._col_names, f"There isn't a column called {name}."
         self.__stats[name] = {}
         self._compute_stats(name)
@@ -31,7 +33,6 @@ class TimeSeriesAnalysis(TimeSeries):
         self._compute_kurtosis(name)
 
     def _compute_adfuller(self, name: str):
-
         # performs the Augmented Dickey-Fuller unit root test for stationarity
         adf_stat, p_value_adf, _, _, critical_vals_adf, _ = adfuller(self[name], regression='ct')
         stats = {
@@ -42,7 +43,6 @@ class TimeSeriesAnalysis(TimeSeries):
         self.__stats[name]['Dickey-Fuller'] = stats
 
     def _compute_kpss(self, name: str):
-
         # performs the Kwiatkowski-Phillips-Schmidt-Shin test for stationarity
         kpss_stat, p_value_kpss, _, critical_vals_kpss = kpss(self[name], regression='ct', nlags='auto')
 
@@ -54,7 +54,6 @@ class TimeSeriesAnalysis(TimeSeries):
         self.__stats[name]['KPSS'] = stats
 
     def _compute_kurtosis(self, name: str):
-
         # calculates the kurtosis
         stats = {
             'Kurtosis Statistic': self[name].kurtosis()

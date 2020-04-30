@@ -5,10 +5,11 @@ prediction.py: This scripts is a short how-to-guide of statsmodel.api used in a 
 SARIMAX model. This code is not extensible and it just must be used as an example.
 """
 
+import itertools
+from datetime import datetime as dt
+
 import matplotlib.pyplot as plt
 import pandas as pd
-from datetime import datetime as dt
-import itertools
 import statsmodels.api as sm
 
 plt.rcParams['axes.labelsize'] = 14
@@ -71,4 +72,3 @@ ax.set_xlabel('Date')
 ax.set_ylabel(f'{wine_name} Wine Sales')
 plt.legend()
 plt.show()
-
