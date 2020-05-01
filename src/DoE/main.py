@@ -6,31 +6,21 @@ from statsmodels.formula.api import ols
 from scipy.stats import f, t
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from statsmodels.stats.multicomp import MultiComparison
+import scipy.stats as stats
 
 
-observations_as_dict = {
+cotton_tensile_strength = pd.DataFrame({
     '15%': [7, 7, 15, 11, 9],
     '20%': [12, 17, 12, 18, 18],
     '25%': [14, 18, 18, 19, 19],
     '30%': [19, 25, 22, 19, 23],
     '35%': [7, 10, 11, 15, 11]
-}
-cotton_percentages = []
-values = []
-for key, value in observations_as_dict.items():
-    for _ in range(len(value)):
-        cotton_percentages.append(key)
-    values = values + value
+})
 
-observations_df = pd.DataFrame(data=observations_as_dict)
-flatten_observations_df = pd.DataFrame({'cotton_percentage': cotton_percentages,
-                                        'tensile_strength': values})
-flatten_observations_means = flatten_observations_df.groupby('cotton_percentage').mean()
-
-book_example = np.array([[7, 8, 15, 11, 9, 10],
-                         [12, 17, 13, 18, 19, 15],
-                         [14, 18, 19, 17, 16, 18],
-                         [19, 25, 22, 23, 18, 20]])
+book_example = pd.DataFrame({'5%': [7, 8, 15, 11, 9, 10],
+                             '10%': [12, 17, 13, 18, 19, 15],
+                             '15%': [14, 18, 19, 17, 16, 18],
+                             '20%': [19, 25, 22, 23, 18, 20]})
 
 
 def calculate_anova_Fo(data_as_array: np.ndarray):
@@ -48,17 +38,26 @@ def calculate_anova_Fo(data_as_array: np.ndarray):
 
 
 if __name__ == '__main__':
-    # step 1: explore distribution
-    box_plot = observations_df.boxplot()
-    box_plot.set(xlabel='Treatment', ylabel='Tensile strength')
-    # plt.show()
 
-    # step 2: reject ANOVA null hypothesis
-    St, SStreatments, SSe, MSt, MSe = calculate_anova_Fo(observations_df.values)
+    working_data = cotton_tensile_strength
+
+    # step 1: explore distribution
+    box_plot = working_data.boxplot()
+    box_plot.set(xlabel='Treatment', ylabel='Tensile strength')
+    plt.show()
+
+    # reshape the d dataframe suitable for statsmodels package
+    d_melt = pd.melt(working_data.reset_index(), id_vars=['index'], value_vars=working_data.columns.values)
+    # replace column names
+    d_melt.columns = ['index', 'treatments', 'value']
+    # Ordinary Least Squares (OLS) model
+    model = ols('value ~ C(treatments)', data=d_melt).fit()
+    anova_table = sm.stats.anova_lm(model, typ=2)
+    print(anova_table)
     print("\n")
 
     # step 3: mean multiple comparison by Fisher method or pairwise comparison (Tukey HSD)
-    mc = MultiComparison(flatten_observations_df['tensile_strength'], flatten_observations_df['cotton_percentage'])
+    mc = MultiComparison(d_melt['value'], d_melt['treatments'])
     result = mc.tukeyhsd()
     print(result)
     print(mc.groupsunique)
