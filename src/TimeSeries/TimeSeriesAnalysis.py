@@ -1,4 +1,5 @@
 import pprint
+import pandas as pd
 
 from statsmodels.tsa.stattools import adfuller, kpss
 
@@ -11,7 +12,7 @@ from src.TimeSeries.TimeSeries import TimeSeries
 class TimeSeriesAnalysis(TimeSeries):
 
     def __init__(self):
-        super(TimeSeries, self).__init__()
+        super().__init__()
         self.__stats = {}
 
     def stats(self, name: str):
@@ -19,6 +20,11 @@ class TimeSeriesAnalysis(TimeSeries):
         self.__stats[name] = {}
         self._compute_stats(name)
         pprint.pprint(self.__stats[name])
+
+    def mse(self, name: str, external_series: pd.Series):
+        intersection_index = self._data.loc[external_series.index].index
+        true_values = self[name].loc[intersection_index]
+        return ((external_series - true_values)**2).mean()
 
     def _compute_stats(self, name: str):
         """
