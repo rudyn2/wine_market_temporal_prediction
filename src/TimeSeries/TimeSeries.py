@@ -194,13 +194,13 @@ class TimeSeries:
         """
         if start == '':
             start = self._data.index[0]
-        self._data[name][start:].plot(ax=ax, label='Observations')
+        self._data[name][start:].plot(ax=ax, label='Observaciones')
         ax.legend()
 
     def col_names(self) -> List[str]:
         return self._col_names
 
-    def info(self) -> str:
+    def info(self):
         return self._data.info()
 
     def __len__(self) -> int:
@@ -214,4 +214,6 @@ if __name__ == '__main__':
     t = TimeSeries()
     t.load(file_path='/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv',
            index_col='Month')
-    t.info()
+    t.scale()
+    t.inv_scale()
+

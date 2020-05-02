@@ -64,8 +64,9 @@ def train(model, optimizer, loss_fn, train_loader, valid_loader, epochs: int = 1
 if __name__ == '__main__':
     i_shape = 12
     o_shape = 1
-    name = 'Rose '
+    name = 'Red '
 
+    np.random.seed(42)
     t = TimeSeries()
     t.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv', index_col='Month')
     t.difference()
@@ -90,7 +91,7 @@ if __name__ == '__main__':
     model: nn.Module = MLP(i_shape, o_shape)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.01)
     loss_fn = nn.MSELoss()
-    train_loss, valid_loss = train(model, optimizer, loss_fn, train_loader, valid_loader, epochs=100)
+    train_loss, valid_loss = train(model, optimizer, loss_fn, train_loader, valid_loader, epochs=50)
 
     fig, ax = plt.subplots(figsize=(12, 8))
     ax.set(xlabel='Epochs', ylabel='MSE Loss', title="MSE Loss evolution vs Epochs")
