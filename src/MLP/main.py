@@ -8,10 +8,11 @@ from src.TimeSeries.TimeSeries import TimeSeries
 from src.TimeSeries.TimeSeriesAnalysis import TimeSeriesAnalysis
 
 if __name__ == '__main__':
-    model_path = '/Users/rudy/Documents/wine_market_temporal_prediction/data/model.pt'
+
     input_size = 12
     output_size = 1
-    name = 'Red '
+    name = 'Rose '
+    model_path = f'/Users/rudy/Documents/wine_market_temporal_prediction/data/model_{name}.pt'
 
     model: nn.Module = MLP(input_size, output_size)
     model.load_state_dict(torch.load(model_path))
@@ -47,8 +48,3 @@ if __name__ == '__main__':
 
     mse = t.mse(name, c)
     print("")
-
-    # fig, axs = plt.subplots(nrows=2, ncols=1)
-    # axs[0].plot(x_index_train, X_train)
-    #
-    # y_valid_pred = eval_valid(model, dataset=X_valid)

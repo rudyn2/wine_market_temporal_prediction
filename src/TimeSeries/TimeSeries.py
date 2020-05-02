@@ -46,7 +46,7 @@ class TimeSeries:
         self._data.drop(columns=[self._index_name], inplace=True)
 
     def timeseries_to_supervised(self, name: str, lag: int = 1, width: int = 4, pred_width: int = 2) -> Tuple[
-        pd.DataFrame, pd.DataFrame, list, list]:
+        np.array, np.array, list, list]:
         """
         Transform the data from temporal series to (x, y) supervised data. It returns two numpy arrays with data.
 
@@ -55,10 +55,10 @@ class TimeSeries:
         :param width:                           Width of the temporal window of data.
         :param pred_width:                      Width of prediction window.
         :return:                                A Tuple.
-                                                    1) X elements.
-                                                    2) Y elements.
-                                                    3)
-                                                    4)
+                                                    1) numpy array with X elements.
+                                                    2) numpy array with y elements.
+                                                    3) temporal indexes of X elements.
+                                                    4) temporal indexes of y elements.
         """
         series = self._data[name].copy()
         dataset_x = []

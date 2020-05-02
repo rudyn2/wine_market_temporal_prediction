@@ -2,6 +2,7 @@ import pprint
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller, kpss
+import warnings
 
 from src.TimeSeries.TimeSeries import TimeSeries
 
@@ -19,15 +20,17 @@ class TimeSeriesAnalysis(TimeSeries):
         super().__init__()
         self.__stats = {}
 
-    def stats(self, name: str):
+    def stats(self, name: str, verbose: bool = True):
         """
         It triggers the stats computing and its display
-        :param name:        Name of particular series that wants to be analyzed.
+        :param name:                    Name of particular series that wants to be analyzed.
+        :param verbose:                 If true the stats will be printed.
         """
         assert name in self._col_names, f"There isn't a column called {name}."
         self.__stats[name] = {}
         self._compute_stats(name)
-        pprint.pprint(self.__stats[name])
+        if verbose:
+            pprint.pprint(self.__stats[name])
 
     def mse(self, name: str, external_series: pd.Series):
         """
@@ -49,9 +52,12 @@ class TimeSeriesAnalysis(TimeSeries):
         :param name:                    Name of the temporal series.
         """
 
-        self._compute_adfuller(name)
-        self._compute_kpss(name)
-        self._compute_kurtosis(name)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="p-value is greater than the indicated p-value")
+            warnings.filterwarnings("ignore", message="p-value is smaller than the indicated p-value")
+            self._compute_adfuller(name)
+            self._compute_kpss(name)
+            self._compute_kurtosis(name)
 
     def _compute_adfuller(self, name: str):
         """
@@ -97,14 +103,57 @@ class TimeSeriesAnalysis(TimeSeries):
         self.__stats[name]['Kurtosis'] = stats
 
     def plot_hist(self, name: str, ax: plt.Axes = None, bins: int = 10):
-
+        """
+        Plots an histogram.
+        """
         if ax is None:
             self[name].hist(bins=bins)
         self[name].hist(bins=bins, ax=ax)
+
+    @staticmethod
+    def _is_rejected(p_value, p_thresh: float = 0.05):
+        """
+        Checks if a null hypothesis is rejected or not.
+        :param p_value:                     p_value of the test.
+        :param p_thresh:                    significance level (usual values are 0.05 or 0.01)
+        :return:                            True if the test is rejected.
+        """
+        if p_value < p_thresh:
+            return True
+        return False
+
+    def report_stationary(self, verbose: bool = False):
+        """
+        It uses the p-value statistic to check if stationary is achieved using KPSS and ADF statistical tests. The rules
+        that dictates if a series is stationary or not are the following.
+
+        1) Both fails to reject --> not stationary
+        2) Both reject --> stationary
+        3) reject KPSS and fails to reject ADF --> trend stationary
+        4) fails to reject KPSS and reject ADF --> difference stationary
+        """
+        for ts_name in self._col_names:
+
+            print(f"Testing: {ts_name}")
+            self.stats(ts_name, verbose=verbose)
+            kpss_p = self.__stats[ts_name]['KPSS']['p-value']
+            adf_p = self.__stats[ts_name]['Dickey-Fuller']['p-value']
+
+            # checks the statistical tests
+            if self._is_rejected(adf_p):
+                result = 'stationary'
+            else:
+                # not enough evidence -> an additional test is required
+                if self._is_rejected(kpss_p):
+                    result = 'not stationary'
+                else:
+                    result = 'trend stationary'
+            print(f"{ts_name}: {result}\n")
 
 
 if __name__ == '__main__':
     t = TimeSeriesAnalysis()
     t.load("/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv", index_col='Month')
-    for name in t.col_names():
-        t.plot_hist(name, bins=20)
+    t.report_stationary(verbose=False)
+    t.difference(interval=1)
+    t.report_stationary()

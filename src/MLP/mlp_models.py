@@ -30,6 +30,8 @@ class MLP(nn.Module):
             nn.ReLU(),
             nn.Linear(100, 200),
             nn.ReLU(),
+            nn.Linear(200, 200),
+            nn.ReLU(),
             nn.Linear(200, output_size)
         )
 
