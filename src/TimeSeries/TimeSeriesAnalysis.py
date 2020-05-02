@@ -1,8 +1,9 @@
 import pprint
-import pandas as pd
-import matplotlib.pyplot as plt
-from statsmodels.tsa.stattools import adfuller, kpss
 import warnings
+
+import matplotlib.pyplot as plt
+import pandas as pd
+from statsmodels.tsa.stattools import adfuller, kpss
 
 from src.TimeSeries.TimeSeries import TimeSeries
 
@@ -44,7 +45,7 @@ class TimeSeriesAnalysis(TimeSeries):
         """
         intersection_index = self._data.loc[external_series.index].index
         true_values = self[name].loc[intersection_index]
-        return ((external_series - true_values)**2).mean()
+        return ((external_series - true_values) ** 2).mean()
 
     def _compute_stats(self, name: str):
         """

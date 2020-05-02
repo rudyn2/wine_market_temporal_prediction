@@ -1,13 +1,10 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import scipy.stats as stats
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
-from scipy.stats import f, t
-from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from statsmodels.stats.multicomp import MultiComparison
-import scipy.stats as stats
-
 
 cotton_tensile_strength = pd.DataFrame({
     '15%': [7, 7, 15, 11, 9],
@@ -26,19 +23,18 @@ book_example = pd.DataFrame({'5%': [7, 8, 15, 11, 9, 10],
 def calculate_anova_Fo(data_as_array: np.ndarray):
     a = data_as_array.shape[0]
     n = data_as_array.shape[1]
-    N = a*n
+    N = a * n
     ydotdot = data_as_array.sum()
-    SSt = (data_as_array**2).sum() - ydotdot**2/N
-    SStreatments = (data_as_array.sum(axis=1)**2).sum() / n - ydotdot**2 / N
+    SSt = (data_as_array ** 2).sum() - ydotdot ** 2 / N
+    SStreatments = (data_as_array.sum(axis=1) ** 2).sum() / n - ydotdot ** 2 / N
     SSe = SSt - SStreatments
-    MStreatment = SStreatments/(a-1)
-    MSe = SSe/(a*(n-1))
-    print(f"Fo = {(MStreatment/MSe):.5f}")
+    MStreatment = SStreatments / (a - 1)
+    MSe = SSe / (a * (n - 1))
+    print(f"Fo = {(MStreatment / MSe):.5f}")
     return SSt, SStreatments, SSe, MStreatment, MSe
 
 
 if __name__ == '__main__':
-
     working_data = cotton_tensile_strength
 
     # step 1: explore distribution

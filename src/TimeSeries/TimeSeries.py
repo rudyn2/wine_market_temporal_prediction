@@ -15,11 +15,11 @@ class TimeSeries:
     def __init__(self):
         self._scaler: MinMaxScaler = MinMaxScaler()
         self._is_scaled = False
-        self._data: pd.DataFrame = None
+        self._data: pd.DataFrame = pd.DataFrame()
         self._col_names: list = []
         self._index_name: str = ''
         self._diff_interval: int = 0
-        self._diff_init_values: pd.DataFrame = None
+        self._diff_init_values: pd.DataFrame = pd.DataFrame()
 
     def load(self, file_path: str, index_col: str):
         """
@@ -216,4 +216,3 @@ if __name__ == '__main__':
            index_col='Month')
     t.scale()
     t.inv_scale()
-

@@ -4,11 +4,9 @@ from sklearn.model_selection import train_test_split
 
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
-from src.TimeSeries.TimeSeries import TimeSeries
 from src.TimeSeries.TimeSeriesAnalysis import TimeSeriesAnalysis
 
 if __name__ == '__main__':
-
     input_size = 12
     output_size = 1
     name = 'Rose '

@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 
 from src.MLP.mlp_models import WineDataset
-from src.TimeSeries.TimeSeries import TimeSeries
 
 
 def model_eval(trained_model: nn.Module, dataset: WineDataset):
@@ -18,4 +17,3 @@ def model_eval(trained_model: nn.Module, dataset: WineDataset):
             outputs = trained_model(temp_seq)
             y_pred.append(pd.Series(outputs.numpy(), index=true_pred_index))
     return pd.concat(y_pred)
-
