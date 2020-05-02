@@ -10,18 +10,35 @@ from src.TimeSeries.TimeSeries import TimeSeries
 
 
 class TimeSeriesAnalysis(TimeSeries):
+    """
+    Class that inherits from TimeSeries Class. It handles the analysis of a time series by performing
+    a number of test that give a notion on how stationary the series is.
+    """
 
     def __init__(self):
         super().__init__()
         self.__stats = {}
 
     def stats(self, name: str):
+        """
+        It triggers the stats computing and its display
+        :param name:        Name of particular series that wants to be analyzed.
+        """
         assert name in self._col_names, f"There isn't a column called {name}."
         self.__stats[name] = {}
         self._compute_stats(name)
         pprint.pprint(self.__stats[name])
 
     def mse(self, name: str, external_series: pd.Series):
+        """
+        Computes the mean square error (MSE) between the time series indexed by name and an external time series
+        given in external_series, by taking only the points where their indexes match. It's a similarity measure
+        in someway.
+
+        :param name:                    Name of the temporal series.
+        :param external_series:         External series passed for comparison.
+        :return:                        MSE between the tow series.
+        """
         intersection_index = self._data.loc[external_series.index].index
         true_values = self[name].loc[intersection_index]
         return ((external_series - true_values)**2).mean()
@@ -29,9 +46,7 @@ class TimeSeriesAnalysis(TimeSeries):
     def _compute_stats(self, name: str):
         """
         Compute all the relevant stats.
-
-        :param name:                    Name of the temporal serie.
-        :return:
+        :param name:                    Name of the temporal series.
         """
 
         self._compute_adfuller(name)
@@ -39,7 +54,12 @@ class TimeSeriesAnalysis(TimeSeries):
         self._compute_kurtosis(name)
 
     def _compute_adfuller(self, name: str):
-        # performs the Augmented Dickey-Fuller unit root test for stationarity
+        """
+        Performs the Augmented Dickey-Fuller unit root test for stationarity and store the main results
+        for further display.
+
+        :param name:                    Name of the temporal series.
+        """
         adf_stat, p_value_adf, _, _, critical_vals_adf, _ = adfuller(self[name], regression='ct')
         stats = {
             'ADF Statistic': adf_stat,
@@ -49,7 +69,12 @@ class TimeSeriesAnalysis(TimeSeries):
         self.__stats[name]['Dickey-Fuller'] = stats
 
     def _compute_kpss(self, name: str):
-        # performs the Kwiatkowski-Phillips-Schmidt-Shin test for stationarity
+        """
+        Performs the Kwiatkowski-Phillips-Schmidt-Shin test for stationarity and store the main results
+        for further display.
+
+        :param name:                    Name of the temporal series.
+        """
         kpss_stat, p_value_kpss, _, critical_vals_kpss = kpss(self[name], regression='ct', nlags='auto')
 
         stats = {
@@ -60,7 +85,12 @@ class TimeSeriesAnalysis(TimeSeries):
         self.__stats[name]['KPSS'] = stats
 
     def _compute_kurtosis(self, name: str):
-        # calculates the kurtosis
+        """
+        Calculates the kurtosis of the time series and store the statistic for further display. Kurtosis is
+         a peakedness measurement of the time series distribution.
+
+        :param name:                    Name of the temporal series.
+        """
         stats = {
             'Kurtosis Statistic': self[name].kurtosis()
         }

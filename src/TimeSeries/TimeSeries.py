@@ -46,7 +46,7 @@ class TimeSeries:
         self._data.drop(columns=[self._index_name], inplace=True)
 
     def timeseries_to_supervised(self, name: str, lag: int = 1, width: int = 4, pred_width: int = 2) -> Tuple[
-        pd.DataFrame, pd.DataFrame, list, list]:
+        np.array, np.array, list, list]:
         """
         Transform the data from temporal series to (x, y) supervised data. It returns two numpy arrays with data.
 
@@ -57,8 +57,8 @@ class TimeSeries:
         :return:                                A Tuple.
                                                     1) X elements.
                                                     2) Y elements.
-                                                    3)
-                                                    4)
+                                                    3) X series index
+                                                    4) Y series index
         """
         series = self._data[name].copy()
         dataset_x = []
@@ -198,9 +198,15 @@ class TimeSeries:
         ax.legend()
 
     def col_names(self) -> List[str]:
+        """
+        :return:        columns names of data
+        """
         return self._col_names
 
     def info(self) -> str:
+        """
+        :return:        info of the DataFrame stored in object
+        """
         return self._data.info()
 
     def __len__(self) -> int:
