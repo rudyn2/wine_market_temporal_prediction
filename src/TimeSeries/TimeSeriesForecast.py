@@ -104,6 +104,6 @@ class TimeSeriesForecast(TimeSeries):
         return fig, ax
 
     @abc.abstractmethod
-    def _proxy_predict(self, result, start: str, end: str) -> Tuple[pd.Series, np.ndarray]:
+    def _proxy_predict(self, result, start: str, end: str) -> Tuple[pd.Series, pd.DataFrame]:
         raise NotImplementedError
 

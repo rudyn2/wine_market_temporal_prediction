@@ -29,7 +29,7 @@ class TimeSeriesSarimax(TimeSeriesForecast):
         self._results[name] = results
         print(results.summary())
 
-    def _proxy_predict(self, name: str, start: str, end: str) -> Tuple[pd.Series, np.ndarray]:
+    def _proxy_predict(self, name: str, start: str, end: str) -> Tuple[pd.Series, pd.DataFrame]:
         last_result = self._results[name]
         pred = last_result.get_prediction(start=start, end=end)
         return pred.predicted_mean, pred.conf_int()

@@ -19,10 +19,10 @@ class TimeSeriesMA(TimeSeriesForecast):
         self._models[name] = model
         self._results[name] = results
 
-    def _proxy_predict(self, name: str, start: str, end: str) -> Tuple[pd.Series, np.ndarray]:
+    def _proxy_predict(self, name: str, start: str, end: str) -> Tuple[pd.Series, pd.DataFrame]:
         last_result = self._results[name]
         predicted = last_result.predict(start=start, end=end)
-        return predicted, None
+        return predicted, pd.DataFrame()
 
 
 if __name__ == '__main__':
