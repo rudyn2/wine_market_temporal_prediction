@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
 from src.TimeSeries.TimeSeries import TimeSeries
+from src.TimeSeries.TimeSeriesAnalysis import TimeSeriesAnalysis
 
 if __name__ == '__main__':
     model_path = '/Users/rudy/Documents/wine_market_temporal_prediction/data/model.pt'
@@ -16,7 +17,7 @@ if __name__ == '__main__':
     model.load_state_dict(torch.load(model_path))
     model.eval()
 
-    t = TimeSeries()
+    t = TimeSeriesAnalysis()
     t.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv', index_col='Month')
     t.difference()
     t.scale()
@@ -34,7 +35,7 @@ if __name__ == '__main__':
     train_dataset = WineDataset(x=X_train, y=y_train, x_index=x_index_train, y_index=y_train_index)
     valid_dataset = WineDataset(x=X_valid, y=y_valid, x_index=x_valid_index, y_index=y_index_val)
 
-    a = model_eval(model, dataset=valid_dataset)
+    a = model_eval(model, dataset=train_dataset)
 
     # using t properties to reverse the operations
     b = t.inv_scale_serie(name=name, external_serie=a)
@@ -43,6 +44,8 @@ if __name__ == '__main__':
     t.inv_scale()
     t.inv_difference()
     t.plot_with(name=name, external_serie=c)
+
+    mse = t.mse(name, c)
     print("")
 
     # fig, axs = plt.subplots(nrows=2, ncols=1)

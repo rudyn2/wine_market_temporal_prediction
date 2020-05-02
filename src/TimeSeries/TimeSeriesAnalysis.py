@@ -1,6 +1,6 @@
 import pprint
 import pandas as pd
-
+import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller, kpss
 
 from src.TimeSeries.TimeSeries import TimeSeries
@@ -96,8 +96,15 @@ class TimeSeriesAnalysis(TimeSeries):
         }
         self.__stats[name]['Kurtosis'] = stats
 
+    def plot_hist(self, name: str, ax: plt.Axes = None, bins: int = 10):
+
+        if ax is None:
+            self[name].hist(bins=bins)
+        self[name].hist(bins=bins, ax=ax)
+
 
 if __name__ == '__main__':
     t = TimeSeriesAnalysis()
     t.load("/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv", index_col='Month')
-    t.stats('Red ')
+    for name in t.col_names():
+        t.plot_hist(name, bins=20)
