@@ -1,5 +1,7 @@
-import matplotlib.pyplot as plt
-import statsmodels.api as sm
+import abc
+from typing import Tuple
+import numpy as np
+import pandas as pd
 
 from src.TimeSeries.TimeSeries import TimeSeries
 
@@ -20,22 +22,6 @@ class TimeSeriesForecast(TimeSeries):
         super(TimeSeries, self).__init__()
         self._models = {}
         self._results = {}
-
-    def fit_sarimax(self, name: str, order: tuple, seasonal_order: tuple):
-        """
-        Fits a SARIMAX model to {name} temporal series given the order and seasonal_order parameters of the
-        statsmodels.tsa.statespace.SARIMAX constructor.
-
-        :param name:                        Name of temporal serie.
-        :param order:                       Order parameter of SARIMAX.
-        :param seasonal_order:              Seasonal order of SARIMAX.
-        """
-        mod = sm.tsa.statespace.SARIMAX(self[name], order=order, seasonal_order=seasonal_order,
-                                        enforce_stationarity=False, enforce_invertibility=False)
-        results = mod.fit(maxiter=200, disp=False)
-        self._models[name] = mod
-        self._results[name] = results
-        print(results.summary())
 
     def get_mse(self, name):
         """
@@ -86,9 +72,7 @@ class TimeSeriesForecast(TimeSeries):
         if name not in self._results.keys():
             raise ResultsNotFound(name)
 
-        last_result = self._results[name]
-        pred = last_result.get_prediction(start=start, end=end)
-        return pred.predicted_mean, pred.conf_int()
+        return self._proxy_predict(name, start, end)
 
     def plot_insample_pred(self, name: str):
         """
@@ -119,16 +103,7 @@ class TimeSeriesForecast(TimeSeries):
         ax.legend()
         return fig, ax
 
+    @abc.abstractmethod
+    def _proxy_predict(self, result, start: str, end: str) -> Tuple[pd.Series, np.ndarray]:
+        raise NotImplementedError
 
-if __name__ == '__main__':
-    t = TimeSeriesForecast()
-    t.load("/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv", index_col='Month')
-    order = (1, 2, 2)
-    seasonal_order = (2, 2, 2, 12)
-    name = 'Red '
-    t.fit_sarimax(name=name, order=order, seasonal_order=seasonal_order)
-    insample_mean, insample_interval = t.predict_in_sample(name)
-
-    fig, ax = t.plot_forecast(name, start='1993-01-01', end='1995-02-01', forecast_label='Forecast')
-    t.plot_serie(name, ax, start='1992-01-01')
-    plt.show()

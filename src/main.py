@@ -9,6 +9,8 @@ import seaborn as sns
 import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
+from statsmodels.tools.eval_measures import mse
+import pandas as pd
 
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
@@ -29,6 +31,12 @@ plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
+
+def _mse(serie_x: pd.Series, serie_y: pd.Series) -> float:
+    series_intersection_index = serie_x.index.intersection(serie_y.index)
+    return mse(serie_x[series_intersection_index], serie_y[series_intersection_index])
+
+
 if __name__ == '__main__':
     random_seed = 42
     input_size = 12
@@ -37,13 +45,13 @@ if __name__ == '__main__':
     name = 'Rose '
     mlp_model_path = f'/Users/rudy/Documents/wine_market_temporal_prediction/data/model_{name}.pt'
     mlp = True
-    sarimax = True
+    sarimax = False
     ma = False
 
     # for auxiliary purposes
     train_ts = TimeSeries()
     train_ts.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWinesTrain.csv',
-                  index_col='Month')
+                 index_col='Month')
     val_ts = TimeSeries()
     val_ts.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWinesTest.csv',
                 index_col='Month')
@@ -73,9 +81,9 @@ if __name__ == '__main__':
 
         # using t properties to reverse the operations
         train_mlp_ts = t.inv_scale_serie(name=name, external_serie=train_mlp_ts)
-        train_mlp_ts = t.inv_difference_serie(name=name, external_serie=train_mlp_ts)
+        train_mlp_ts = t.inv_difference_serie(name=name, external_serie=train_mlp_ts).dropna()
         val_mlp_ts = t.inv_scale_serie(name=name, external_serie=val_mlp_ts)
-        val_mlp_ts = t.inv_difference_serie(name=name, external_serie=val_mlp_ts)
+        val_mlp_ts = t.inv_difference_serie(name=name, external_serie=val_mlp_ts).dropna()
 
         _, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 8))
 
@@ -89,6 +97,10 @@ if __name__ == '__main__':
         axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Validación')
 
         plt.show()
+        print("MLP Metrics")
+        print(f"Train MSE: {_mse(train_ts[name], train_mlp_ts):.4f} | Test MSE: {_mse(val_ts[name], val_mlp_ts):.4f}")
+
+
 
     # endregion: MLP
 
