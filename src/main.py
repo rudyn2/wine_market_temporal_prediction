@@ -70,6 +70,8 @@ if __name__ == '__main__':
         X_train, y_train, x_train_index, y_train_index = t_train.timeseries_to_supervised(name=name,
                                                                                           width=input_size,
                                                                                           pred_width=output_size)
+
+        t_valid.difference()
         X_valid, y_valid, x_val_index, y_val_index = t_train.scale(t_valid).timeseries_to_supervised(name=name,
                                                                                                      width=input_size,
                                                                                                      pred_width=output_size)
@@ -89,12 +91,21 @@ if __name__ == '__main__':
         train_mlp_ts = t_train.inv_scale_serie(name=name, external_serie=train_mlp_ts)
         train_mlp_ts = t_train.inv_difference_serie(name=name, external_serie=train_mlp_ts).dropna()
 
+        # using t properties to reverse the operations
+        val_mlp_ts = t_valid.inv_scale_serie(name=name, external_serie=val_mlp_ts)
+        val_mlp_ts = t_valid.inv_difference_serie(name=name, external_serie=val_mlp_ts)
+
         _, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 8))
 
         # plot results
         train_mlp_ts.plot(ax=axs[0], label='Predicción')
         train_ts.plot_serie(name, ax=axs[0])
         axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Entrenamiento')
+
+        # plot results
+        val_mlp_ts.plot(ax=axs[1], label='Predicción')
+        val_ts.plot_serie(name, ax=axs[1])
+        axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Validación')
 
         plt.show()
         print("MLP Metrics")
@@ -125,4 +136,7 @@ if __name__ == '__main__':
         axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Validación')
 
         plt.show()
+
+        print("Sarimax Metrics")
+        print(f"Train MSE: {_mse(train_sarimax_pred, train_ts[name]):.4f} | Test MSE: {_mse(val_sarimax_pred, val_ts[name]):.4f}")
     # endregion

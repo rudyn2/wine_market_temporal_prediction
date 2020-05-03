@@ -4,9 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from datetime import timedelta
 from collections import defaultdict
-from copy import copy, deepcopy
+from copy import deepcopy
 
 
 class DiffOperation:
@@ -188,7 +187,7 @@ class TimeSeries:
         """
         if name not in self._diff_operators.keys():
             raise ValueError("Invalid operation")
-        return self._diff_operators[name].pop().partial_invert(external_serie)
+        return self._diff_operators[name][-1].partial_invert(external_serie)
 
     def fit_scale(self):
         """
@@ -202,8 +201,9 @@ class TimeSeries:
         """
         scales the data using a MinMaxScaler.
         """
-        other_time_series._data[:] = self._scaler.transform(X=other_time_series._data)
+        other_time_series.data[:] = self._scaler.transform(X=other_time_series.data)
         other_time_series._is_scaled = True
+        other_time_series._scaler = self._scaler
         return other_time_series
 
     def inv_scale(self):

@@ -6,6 +6,22 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from statsmodels.stats.multicomp import MultiComparison
 
+import seaborn as sns
+
+
+SMALL_SIZE = 16
+MEDIUM_SIZE = 16
+BIGGER_SIZE = 22
+
+plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+
 cotton_tensile_strength = pd.DataFrame({
     '15%': [7, 7, 15, 11, 9],
     '20%': [12, 17, 12, 18, 18],
@@ -38,8 +54,9 @@ if __name__ == '__main__':
     working_data = cotton_tensile_strength
 
     # step 1: explore distribution
-    box_plot = working_data.boxplot()
-    box_plot.set(xlabel='Treatment', ylabel='Tensile strength')
+    fig, ax = plt.subplots(figsize=(8, 6), dpi=300)
+    box_plot = working_data.boxplot(ax=ax)
+    box_plot.set(xlabel='Porcentaje de algodón', ylabel='Resistencia a la tensión')
     plt.show()
 
     # reshape the d dataframe suitable for statsmodels package

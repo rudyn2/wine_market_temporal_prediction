@@ -27,7 +27,6 @@ class TimeSeriesSarimax(TimeSeriesForecast):
         results = mod.fit(maxiter=200, disp=False)
         self._models[name] = mod
         self._results[name] = results
-        print(results.summary())
 
     def _proxy_predict(self, name: str, start: str, end: str) -> Tuple[pd.Series, pd.DataFrame]:
         last_result = self._results[name]
