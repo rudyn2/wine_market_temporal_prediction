@@ -5,9 +5,10 @@ import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
-
 from src.MLP.mlp_models import WineDataset, MLP
 from src.TimeSeries.TimeSeries import TimeSeries
+from src.Utils.Utils import Utils
+import os
 
 sns.set()
 
@@ -62,20 +63,26 @@ def train(model, optimizer, loss_fn, train_loader, valid_loader, epochs: int = 1
 
 
 if __name__ == '__main__':
+
     i_shape = 12
     o_shape = 1
-    name = 'Red '
-
+    name = 'Fortified'
+    repo_path = Utils.get_repo_path()
+    data_path = os.path.join(repo_path, f'data/model_{name}.pt')
     np.random.seed(42)
-    t = TimeSeries()
-    t.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv', index_col='Month')
-    t.difference()
-    t.scale()
-    x, y, x_index, y_index = t.timeseries_to_supervised(name=name, width=i_shape, pred_width=o_shape)
 
-    # split
-    X_train, X_valid, y_train, y_valid, x_train_index, x_valid_index, y_train_index, y_val_index = \
-        train_test_split(x, y, x_index, y_index, test_size=1 / 8, random_state=42, shuffle=False)
+    t_train, t_valid = TimeSeries(), TimeSeries()
+    t_train.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
+    t_valid.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')
+
+    t_train.difference()
+    t_train.fit_scale()
+    X_train, y_train, x_train_index, y_train_index = t_train.timeseries_to_supervised(name=name,
+                                                                                      width=i_shape,
+                                                                                      pred_width=o_shape)
+    X_valid, y_valid, x_val_index, y_val_index = t_train.scale(t_valid).timeseries_to_supervised(name=name,
+                                                                                                 width=i_shape,
+                                                                                                 pred_width=o_shape)
 
     X_train = torch.from_numpy(X_train).float()  # convert to tensors
     y_train = torch.from_numpy(y_train).float()
@@ -83,13 +90,13 @@ if __name__ == '__main__':
     y_valid = torch.from_numpy(y_valid).float()
 
     train_dataset = WineDataset(X_train, y_train, x_train_index, y_train_index)
-    valid_dataset = WineDataset(X_valid, y_valid, x_valid_index, y_val_index)
+    valid_dataset = WineDataset(X_valid, y_valid, x_val_index, y_val_index)
 
     train_loader = DataLoader(dataset=train_dataset, batch_size=128, shuffle=False)
     valid_loader = DataLoader(dataset=valid_dataset, batch_size=128, shuffle=False)
 
     model: nn.Module = MLP(i_shape, o_shape)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.01)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0)
     loss_fn = nn.MSELoss()
     train_loss, valid_loss = train(model, optimizer, loss_fn, train_loader, valid_loader, epochs=50)
 
@@ -101,4 +108,4 @@ if __name__ == '__main__':
     ax.legend(lines, labels, loc='best')
     plt.show()
 
-    torch.save(model.state_dict(), f'/Users/rudy/Documents/wine_market_temporal_prediction/data/model_{name}.pt')
+    torch.save(model.state_dict(), os.path.join(repo_path, f'data/model_{name}.pt'))

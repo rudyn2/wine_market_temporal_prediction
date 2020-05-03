@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from datetime import timedelta
 from collections import defaultdict
+from copy import copy, deepcopy
 
 
 class DiffOperation:
@@ -14,13 +15,19 @@ class DiffOperation:
         self._data_copy: pd.Series = pd.Series(dtype='float64')
         self._interval: int = 0
 
-    def fit_transform(self, data: pd.Series, interval: int = 1) -> pd.Series:
+    def fit(self, data: pd.Series):
         self._data_copy = data.copy(deep=True)
+
+    def fit_transform(self, data: pd.Series, interval: int = 1) -> pd.Series:
+        self._data_copy = data
         self._interval = interval
+        return self.transform(data)
+
+    def transform(self, data: pd.Series) -> pd.Series:
         diff = []
         indexes = []
-        for index in range(interval, len(data)):
-            value = data.iloc[index] - data.iloc[index - interval]
+        for index in range(self._interval, len(data)):
+            value = data.iloc[index] - data.iloc[index - self._interval]
             indexes.append(data.index[index])
             diff.append(value)
         return pd.Series(data=diff, index=indexes).dropna()
@@ -41,6 +48,12 @@ class DiffOperation:
             inverted_indexes.append(index)
         inverter_ts = pd.Series(data=np.float64(inverted_values), index=inverted_indexes)
         return inverter_ts
+
+    def __copy__(self):
+        new = DiffOperation()
+        new._data_copy = self._data_copy.copy(deep=True)
+        new._interval = self._interval
+        return new
 
     def partial_invert(self, external: pd.Series) -> pd.Series:
 
@@ -81,14 +94,28 @@ class TimeSeries:
         :param index_col:                       Name of the index column.
         """
         self._data = pd.read_csv(file_path)
-        self._col_names = [column_name for column_name in self._data.columns if column_name != index_col]
+        self._col_names = [column_name for column_name in self._data.columns if column_name not in [index_col, 'Unnamed: 0']]
         self._index_name = index_col
         self._preprocess()
+
+    def load_dataframe(self, df: pd.DataFrame):
+        """
+        Loads an external dataframe. It is assumed that external df is preprocessed.
+
+        :param df:                              External pandas dataframe
+        """
+        assert type(df.index) == pd.DatetimeIndex
+        self._col_names = [column_name for column_name in self._data.columns]
+        self._data = df
+        for name in self._diff_operators.keys():
+            self._diff_operators[name][-1].fit(df[name])
 
     def _preprocess(self):
         """
         Does general pre-processing of the temporal series.
         """
+        if 'Unnamed: 0' in self._data.columns.values:
+            self._data.drop(columns=['Unnamed: 0'], inplace=True)
         if self._index_name is not None:
             self._data.set_index(pd.to_datetime(self._data[self._index_name]), inplace=True)
         self._data.index.freq = self._data.index.inferred_freq
@@ -161,15 +188,23 @@ class TimeSeries:
         """
         if name not in self._diff_operators.keys():
             raise ValueError("Invalid operation")
-        return self._diff_operators[name].partial_invert(external_serie)
+        return self._diff_operators[name].pop().partial_invert(external_serie)
 
-    def scale(self):
+    def fit_scale(self):
         """
-        Scales the data using a MinMaxScaler.
+        fits and scales the data using a MinMaxScaler.
         """
         self._data[:] = self._scaler.fit_transform(X=self._data)
         self._is_scaled = True
         return self.copy()
+
+    def scale(self, other_time_series):
+        """
+        scales the data using a MinMaxScaler.
+        """
+        other_time_series._data[:] = self._scaler.transform(X=other_time_series._data)
+        other_time_series._is_scaled = True
+        return other_time_series
 
     def inv_scale(self):
         """
@@ -206,7 +241,7 @@ class TimeSeries:
         new._index_name = self._index_name
         new._scaler = self._scaler
         new._is_scaled = self._is_scaled
-        new._diff_operators = self._diff_operators
+        new._diff_operators = deepcopy(self._diff_operators)
         return new
 
     def plot_with(self, name: str, external_serie: pd.Series):
@@ -258,6 +293,10 @@ class TimeSeries:
     def __getitem__(self, item):
         return self._data[item]
 
+    @property
+    def data(self):
+        return self._data
+
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
@@ -267,7 +306,7 @@ if __name__ == '__main__':
     name = 'Red '
     fig, ax = plt.subplots()
     t[name].plot(ax=ax)
-    t.scale()
+    t.fit_scale()
 
     # we extract a part of the serie and sums 1 to each value
     subt_copy = t[name].copy()

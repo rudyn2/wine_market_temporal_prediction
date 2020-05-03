@@ -11,11 +11,14 @@ import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from statsmodels.tools.eval_measures import mse
 import pandas as pd
+import numpy as np
 
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
 from src.TimeSeries.TimeSeries import TimeSeries
 from src.TimeSeries.TimeSeriesSarimax import TimeSeriesSarimax
+import os
+from src.Utils.Utils import Utils
 
 sns.set()
 
@@ -38,40 +41,43 @@ def _mse(serie_x: pd.Series, serie_y: pd.Series) -> float:
 
 
 if __name__ == '__main__':
-    random_seed = 42
+
+    repo_path = Utils.get_repo_path()
+    np.random.seed(42)
     input_size = 12
     output_size = 1
     test_size = 1 / 8
-    name = 'Rose '
-    mlp_model_path = f'/Users/rudy/Documents/wine_market_temporal_prediction/data/model_{name}.pt'
+    name = 'Fortified'
+    mlp_model_path = os.path.join(repo_path, f'data/model_{name}.pt')
     mlp = True
     sarimax = True
     ma = False
 
     # for auxiliary purposes
-    train_ts = TimeSeries()
-    train_ts.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWinesTrain.csv',
-                 index_col='Month')
-    val_ts = TimeSeries()
-    val_ts.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWinesTest.csv',
-                index_col='Month')
+    train_ts, val_ts, entire_ts = TimeSeries(), TimeSeries(), TimeSeries()
+    train_ts.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
+    val_ts.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')
+    entire_ts.load(os.path.join(repo_path, 'data/AustralianWines.csv'), index_col='Month')
 
     # region: MLP
     if mlp:
-        t = TimeSeries()
-        t.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv', index_col='Month')
-        t.difference()
-        t.scale()
-        x, y, x_index, y_index = t.timeseries_to_supervised(name=name, width=input_size, pred_width=output_size)
+        t_train, t_valid = TimeSeries(), TimeSeries()
+        t_train.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
+        t_valid.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')
 
-        # split
-        X_train, X_valid, y_train, y_valid, x_index_train, x_valid_index, y_train_index, y_index_val = \
-            train_test_split(x, y, x_index, y_index, test_size=test_size, random_state=random_seed, shuffle=False)
+        t_train.difference()
+        t_train.fit_scale()
+        X_train, y_train, x_train_index, y_train_index = t_train.timeseries_to_supervised(name=name,
+                                                                                          width=input_size,
+                                                                                          pred_width=output_size)
+        X_valid, y_valid, x_val_index, y_val_index = t_train.scale(t_valid).timeseries_to_supervised(name=name,
+                                                                                                     width=input_size,
+                                                                                                     pred_width=output_size)
 
         train_dataset = WineDataset(x=torch.from_numpy(X_train).float(), y=torch.from_numpy(y_train).float(),
-                                    x_index=x_index_train, y_index=y_train_index)
+                                    x_index=x_train_index, y_index=y_train_index)
         valid_dataset = WineDataset(x=torch.from_numpy(X_valid).float(), y=torch.from_numpy(y_valid).float(),
-                                    x_index=x_valid_index, y_index=y_index_val)
+                                    x_index=x_val_index, y_index=y_val_index)
 
         model: nn.Module = MLP(input_size, output_size)
         model.load_state_dict(torch.load(mlp_model_path))
@@ -80,10 +86,8 @@ if __name__ == '__main__':
         val_mlp_ts = model_eval(model, dataset=valid_dataset)
 
         # using t properties to reverse the operations
-        train_mlp_ts = t.inv_scale_serie(name=name, external_serie=train_mlp_ts)
-        train_mlp_ts = t.inv_difference_serie(name=name, external_serie=train_mlp_ts).dropna()
-        val_mlp_ts = t.inv_scale_serie(name=name, external_serie=val_mlp_ts)
-        val_mlp_ts = t.inv_difference_serie(name=name, external_serie=val_mlp_ts).dropna()
+        train_mlp_ts = t_train.inv_scale_serie(name=name, external_serie=train_mlp_ts)
+        train_mlp_ts = t_train.inv_difference_serie(name=name, external_serie=train_mlp_ts).dropna()
 
         _, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 8))
 
@@ -91,10 +95,6 @@ if __name__ == '__main__':
         train_mlp_ts.plot(ax=axs[0], label='Predicción')
         train_ts.plot_serie(name, ax=axs[0])
         axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Entrenamiento')
-
-        val_mlp_ts.plot(ax=axs[1], label='Predicción')
-        val_ts.plot_serie(name, ax=axs[1])
-        axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Validación')
 
         plt.show()
         print("MLP Metrics")
@@ -109,7 +109,7 @@ if __name__ == '__main__':
                               index_col='Month')
         order = (1, 0, 0)
         seasonal_order = (1, 0, 0, 12)
-        sarimax_train_ts.fit(name, order, seasonal_order)
+        sarimax_train_ts.fit(name, order=order, seasonal_order=seasonal_order)
         train_sarimax_pred, train_sarimax_pred_ci = sarimax_train_ts.predict_in_sample(name)
         val_sarimax_pred, val_sarimax_pred_ci = sarimax_train_ts.predict_out_of_sample(name,
                                                                                        start=val_ts[name].index[0],

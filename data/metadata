@@ -1,3 +1,3 @@
 AustralianWines: 100%
-AustralianWinesTrain: 87.5%
-AustralianWinesTest: 12.5% (1/8)
+AustralianWinesTrain: 80%
+AustralianWinesTest: 20% (1/5)
