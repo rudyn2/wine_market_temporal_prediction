@@ -4,20 +4,21 @@ main.py:
 Shows the results for sarimax, MA and MLP models.
 """
 
+import os
+from pprint import pprint
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
 import torch
 import torch.nn as nn
-from sklearn.model_selection import train_test_split
 from statsmodels.tools.eval_measures import mse
-import pandas as pd
-import numpy as np
 
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
 from src.TimeSeries.TimeSeries import TimeSeries
 from src.TimeSeries.TimeSeriesSarimax import TimeSeriesSarimax
-import os
 from src.Utils.Utils import Utils
 
 sns.set()
@@ -40,6 +41,14 @@ def _mse(serie_x: pd.Series, serie_y: pd.Series) -> float:
     return mse(serie_x[series_intersection_index], serie_y[series_intersection_index])
 
 
+def mape(serie_x: pd.Series, serie_y: pd.Series) -> float:
+    series_intersection_index = serie_x.index.intersection(serie_y.index)
+    s1 = serie_x[series_intersection_index]
+    s2 = serie_y[series_intersection_index]
+    mape_metric = np.sum(np.divide(100*np.abs(s1-s2), s1))/len(s1)
+    return mape_metric
+
+
 if __name__ == '__main__':
 
     repo_path = Utils.get_repo_path()
@@ -49,7 +58,7 @@ if __name__ == '__main__':
     test_size = 1 / 8
     name = 'Fortified'
     mlp_model_path = os.path.join(repo_path, f'data/model_{name}.pt')
-    mlp = True
+    mlp = False
     sarimax = True
     ma = False
 
@@ -115,28 +124,45 @@ if __name__ == '__main__':
 
     # region: SARIMAX
     if sarimax:
-        sarimax_train_ts = TimeSeriesSarimax()
-        sarimax_train_ts.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWinesTrain.csv',
-                              index_col='Month')
-        order = (1, 0, 0)
-        seasonal_order = (1, 0, 0, 12)
-        sarimax_train_ts.fit(name, order=order, seasonal_order=seasonal_order)
-        train_sarimax_pred, train_sarimax_pred_ci = sarimax_train_ts.predict_in_sample(name)
-        val_sarimax_pred, val_sarimax_pred_ci = sarimax_train_ts.predict_out_of_sample(name,
-                                                                                       start=val_ts[name].index[0],
-                                                                                       end=val_ts[name].index[-1])
-        _, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 8))
+        names = entire_ts.col_names()
+        fig, axs = plt.subplots(nrows=len(names), ncols=2, figsize=(15, 24), dpi=180, sharey='row')
+        MAPE_reg = {'train': {}, 'val': {}}
 
-        sarimax_train_ts.plot_serie(name, ax=axs[0])
-        train_sarimax_pred.plot(ax=axs[0], label='Predicción')
-        axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Entrenamiento')
+        for i, name in enumerate(names):
+            sarimax_train_ts = TimeSeriesSarimax()
+            sarimax_train_ts.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
 
-        val_ts.plot_serie(name, ax=axs[1])
-        val_sarimax_pred.plot(ax=axs[1], label='Predicción')
-        axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Validación')
+            txt_path = os.path.join(repo_path, f'data/parameters_tried_{name.strip()}.txt')
+            best_params, _ = Utils.read_params_aic(txt_path, best=True)
 
+            order = best_params[:3]
+            seasonal_order = best_params[3:]
+            sarimax_train_ts.fit(name, order=order, seasonal_order=seasonal_order)
+            train_sarimax_pred, train_sarimax_pred_ci = sarimax_train_ts.predict_in_sample(name)
+            val_sarimax_pred, val_sarimax_pred_ci = sarimax_train_ts.predict_out_of_sample(name,
+                                                                                           start=val_ts[name].index[0],
+                                                                                           end=val_ts[name].index[-1])
+            MAPE_reg['train'][name] = mape(train_ts[name], train_sarimax_pred)
+            MAPE_reg['val'][name] = mape(val_ts[name], val_sarimax_pred)
+
+            sarimax_train_ts.plot_serie(name, ax=axs[i, 0])
+            train_sarimax_pred.plot(ax=axs[i, 0], label='Predicción', title=name)
+            axs[i, 0].legend()
+
+            val_ts.plot_serie(name, ax=axs[i, 1])
+            val_sarimax_pred.plot(ax=axs[i, 1], label='Predicción', title=name)
+            axs[i, 1].legend()
+
+        axs[0, 0].set(title=f'Entrenamiento\n{names[0]}')
+        axs[0, 1].set(title=f'Validación\n{names[0]}')
+
+        for ax in axs.flat:
+            ax.set(xlabel='Fecha', ylabel='Miles de litros')
+        for ax in axs.flat:
+            ax.label_outer()
+
+        # plt.tight_layout()
         plt.show()
 
-        print("Sarimax Metrics")
-        print(f"Train MSE: {_mse(train_sarimax_pred, train_ts[name]):.4f} | Test MSE: {_mse(val_sarimax_pred, val_ts[name]):.4f}")
+        pprint(MAPE_reg, width=1)
     # endregion
