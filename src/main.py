@@ -17,8 +17,11 @@ from statsmodels.tools.eval_measures import mse
 
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
-from src.TimeSeries.TimeSeries import TimeSeries
+from src.TimeSeries.TimeSeries import TimeSeries, DiffOperation
 from src.TimeSeries.TimeSeriesSarimax import TimeSeriesSarimax
+from src.TimeSeries.TimeSeriesMA import TimeSeriesMA
+from datetime import datetime as dt
+import os
 from src.Utils.Utils import Utils
 
 sns.set()
@@ -63,10 +66,10 @@ if __name__ == '__main__':
     ma = False
 
     # for auxiliary purposes
-    train_ts, val_ts, entire_ts = TimeSeries(), TimeSeries(), TimeSeries()
+    train_ts, val_ts, total_ts = TimeSeries(), TimeSeries(), TimeSeries()
     train_ts.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
     val_ts.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')
-    entire_ts.load(os.path.join(repo_path, 'data/AustralianWines.csv'), index_col='Month')
+    total_ts.load(os.path.join(repo_path, 'data/AustralianWines.csv'), index_col='Month')
 
     # region: MLP
     if mlp:
@@ -165,4 +168,49 @@ if __name__ == '__main__':
         plt.show()
 
         pprint(MAPE_reg, width=1)
+    # endregion
+
+    # region: MA
+    if ma:
+
+        # plot results
+        _, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 8))
+
+        total_ts_copy = total_ts.copy()[name]
+        total_ts = total_ts[name]
+
+        diff_1, diff_2 = DiffOperation(), DiffOperation()
+        total_ts = diff_1.fit_transform(total_ts, interval=1)
+        january_diff_1, february_diff_1 = total_ts['1994-01-01'], total_ts['1994-02-01']
+        total_ts = diff_2.fit_transform(total_ts, interval=12)
+
+        # moving average
+        ma_pred = total_ts.rolling(12).mean().dropna()
+
+        # moving average extended to january and february
+        january_diff_2 = total_ts['1994-01-01':'1994-12-01'].mean()
+        february_diff_2 = (total_ts['1994-01-02':'1994-12-01'].sum() + january_diff_2)/12
+        ma_pred_copy = ma_pred.copy()
+        ma_pred[dt(1995, 1, 1)] = january_diff_2
+        ma_pred[dt(1995, 2, 1)] = february_diff_2
+
+        # plotting diff
+        ma_pred.plot(ax=axs[0], label='Predicción')
+        total_ts.plot(ax=axs[0], label='Observaciones')
+        axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Predicción de serie doblemente diferenciada')
+
+        # inverting moving average
+        ma_pred_copy = diff_2.invert(ma_pred_copy)
+        ma_pred_copy = diff_1.invert(ma_pred_copy)
+        january = (january_diff_2 + january_diff_1) + total_ts_copy['1994-01-01']
+        february = (february_diff_2 + february_diff_1) + total_ts_copy['1994-02-01']
+        ma_pred_copy[dt(1995, 1, 1)] = january
+        ma_pred_copy[dt(1995, 2, 1)] = february
+
+        ma_pred_copy.plot(ax=axs[1], label='Predicción')
+        total_ts_copy.plot(ax=axs[1], label='Observaciones')
+        axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Predicción')
+
+        plt.legend()
+        plt.show()
     # endregion
