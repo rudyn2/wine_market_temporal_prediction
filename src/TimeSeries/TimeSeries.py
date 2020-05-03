@@ -1,8 +1,9 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from src.Utils.Utils import DiffOperation
 from sklearn.preprocessing import MinMaxScaler
 
 
@@ -13,6 +14,7 @@ class TimeSeries:
     """
 
     def __init__(self):
+        self._diff_operators: Dict[str, DiffOperation] = {}
         self._scaler: MinMaxScaler = MinMaxScaler()
         self._is_scaled = False
         self._data: pd.DataFrame = pd.DataFrame()
@@ -85,20 +87,18 @@ class TimeSeries:
         """
 
         assert type(interval) is int, "Just integer values for interval parameter are allowed."
-        self._diff_init_values = self._data.iloc[:interval]
-        self._data = self._data.diff(interval).dropna()
-        self._diff_interval = interval
+        for name in self._col_names:
+            diff_op = DiffOperation()
+            self._data[name] = diff_op.fit_transform(self._data[name], interval)
+            self._diff_operators[name] = diff_op
         return self.copy()
 
     def inv_difference(self):
         """
         Reverse the last difference operation.
         """
-        self._data.fillna(value=self._diff_init_values, inplace=True)
-        for i in range(self._diff_interval, len(self._data)):
-            self._data.iloc[i, :] = self._data.iloc[i, :] + self._data.iloc[i - self._diff_interval, :]
-        self._diff_init_values = None
-        self._diff_interval = 0
+        for name in self._col_names:
+            self._data[name] = self._diff_operators[name].invert(self._data[name])
         return self.copy()
 
     def inv_difference_serie(self, name: str, external_serie: pd.Series) -> pd.Series:
@@ -106,21 +106,8 @@ class TimeSeries:
         Reverse the difference of external data using difference values stored in the last difference
         operation made by this object.
         """
-        # TODO: This method is not working. It should take a predicted external difference and integrate it using
-        #       the right constant.
-        if self._diff_interval == 0:
-            raise ValueError("Invalid operation.")
 
-        working_data = self.copy()
-        if working_data._is_scaled:
-            working_data.inv_scale()
-
-        interval_lag = self._diff_interval
-        if working_data._diff_interval > 0:
-            working_data.inv_difference()
-
-        inverted = external_serie + working_data[name].shift(-interval_lag)
-        return inverted
+        return self._diff_operators[name].partial_invert(external_serie)
 
     def scale(self):
         """
