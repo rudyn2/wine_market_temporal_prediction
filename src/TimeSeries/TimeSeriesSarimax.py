@@ -43,9 +43,10 @@ if __name__ == '__main__':
     order = (1, 2, 2)
     seasonal_order = (2, 2, 2, 12)
     name = 'Red '
-    t.fit(name, order, seasonal_order)
-    insample_mean, insample_interval = t.predict_in_sample(name)
+    # t.fit(name, order, seasonal_order)
+    fig, ax = plt.subplots()
 
-    fig, ax = t.plot_forecast(name, start='1993-01-01', end='1995-02-01', forecast_label='Forecast')
-    t.plot_serie(name, ax, start='1992-01-01')
+
+    # fig, ax = t.plot_forecast(name, start='1993-01-01', end='1995-02-01', forecast_label='Forecast')
+    # t.plot_serie(name, ax, start='1992-01-01')
     plt.show()

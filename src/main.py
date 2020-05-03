@@ -15,7 +15,7 @@ import pandas as pd
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
 from src.TimeSeries.TimeSeries import TimeSeries
-from src.TimeSeries.TimeSeriesForecast import TimeSeriesForecast
+from src.TimeSeries.TimeSeriesSarimax import TimeSeriesSarimax
 
 sns.set()
 
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     name = 'Rose '
     mlp_model_path = f'/Users/rudy/Documents/wine_market_temporal_prediction/data/model_{name}.pt'
     mlp = True
-    sarimax = False
+    sarimax = True
     ma = False
 
     # for auxiliary purposes
@@ -100,18 +100,16 @@ if __name__ == '__main__':
         print("MLP Metrics")
         print(f"Train MSE: {_mse(train_ts[name], train_mlp_ts):.4f} | Test MSE: {_mse(val_ts[name], val_mlp_ts):.4f}")
 
-
-
     # endregion: MLP
 
     # region: SARIMAX
     if sarimax:
-        sarimax_train_ts = TimeSeriesForecast()
+        sarimax_train_ts = TimeSeriesSarimax()
         sarimax_train_ts.load('/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWinesTrain.csv',
                               index_col='Month')
         order = (1, 0, 0)
         seasonal_order = (1, 0, 0, 12)
-        sarimax_train_ts.fit_sarimax(name, order, seasonal_order)
+        sarimax_train_ts.fit(name, order, seasonal_order)
         train_sarimax_pred, train_sarimax_pred_ci = sarimax_train_ts.predict_in_sample(name)
         val_sarimax_pred, val_sarimax_pred_ci = sarimax_train_ts.predict_out_of_sample(name,
                                                                                        start=val_ts[name].index[0],

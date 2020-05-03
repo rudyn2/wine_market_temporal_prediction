@@ -19,7 +19,7 @@ class TimeSeriesForecast(TimeSeries):
     """
 
     def __init__(self):
-        super(TimeSeries, self).__init__()
+        super().__init__()
         self._models = {}
         self._results = {}
 

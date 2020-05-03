@@ -1,7 +1,6 @@
 from src.TimeSeries.TimeSeriesForecast import TimeSeriesForecast
 import statsmodels.api as sm
 from typing import Tuple
-import numpy as np
 import pandas as pd
 
 
@@ -14,8 +13,8 @@ class TimeSeriesMA(TimeSeriesForecast):
         super().__init__()
 
     def fit(self, name: str, order: int):
-        model = sm.tsa.ARMA(self[name], order=(0, order))
-        results = model.fit(maxiter=200, disp=False)
+        model = sm.tsa.ARMA(self[name], order=(2, order))
+        results = model.fit(maxiter=200, disp=True)
         self._models[name] = model
         self._results[name] = results
 
@@ -30,9 +29,10 @@ if __name__ == '__main__':
 
     t = TimeSeriesMA()
     t.load("/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv", index_col='Month')
-    order = (1, 2, 2)
-    seasonal_order = (2, 2, 2, 12)
-    name = 'Red '
+    name = 'Rose '
+    # t.plot_serie(ax=ax, name=name)
+    t.difference(interval=1)
+    t.difference(interval=12)
     t.fit(name, 12)
     insample_mean, insample_interval = t.predict_in_sample(name)
 

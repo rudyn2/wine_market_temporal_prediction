@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from datetime import timedelta
+from collections import defaultdict
 
 
 class DiffOperation:
@@ -14,7 +15,7 @@ class DiffOperation:
         self._interval: int = 0
 
     def fit_transform(self, data: pd.Series, interval: int = 1) -> pd.Series:
-        self._data_copy = data
+        self._data_copy = data.copy(deep=True)
         self._interval = interval
         diff = []
         indexes = []
@@ -34,31 +35,28 @@ class DiffOperation:
 
         for index in external_diff.index:
             # datetime index
-            int_loc = list(external_diff.index).index(index)
+            int_loc = list(self._data_copy.index).index(index)
             value = external_diff.loc[index] + self._data_copy.iloc[int_loc - self._interval]
             inverted_values.append(value)
             inverted_indexes.append(index)
-        return pd.Series(data=inverted_values, index=inverted_indexes)
-
-    def _infer_step(self):
-
-        assert len(self._data_copy) > 2
-        time_step = self._data_copy.index[1] - self._data_copy.index[0]
-        return time_step
+        inverter_ts = pd.Series(data=np.float64(inverted_values), index=inverted_indexes)
+        return inverter_ts
 
     def partial_invert(self, external: pd.Series) -> pd.Series:
 
         assert type(external.index) is pd.DatetimeIndex
 
-        t_step = self._infer_step()
         inverted_indexes = []
         inverted_values = []
+
         for index in external.index:
             # datetime index
-            value = external.loc[index] + self._data_copy.loc[index - self._interval * t_step]
+            int_loc = list(self._data_copy.index).index(index)
+            value = external.loc[index] + self._data_copy.iloc[int_loc - self._interval]
             inverted_values.append(value)
             inverted_indexes.append(index)
-        return pd.Series(data=inverted_values, index=inverted_indexes)
+
+        return pd.Series(data=inverted_values, index=inverted_indexes).copy()
 
 
 class TimeSeries:
@@ -68,14 +66,12 @@ class TimeSeries:
     """
 
     def __init__(self):
-        self._diff_operators: Dict[str, DiffOperation] = {}
+        self._diff_operators: defaultdict[list] = defaultdict(list)
         self._scaler: MinMaxScaler = MinMaxScaler()
         self._is_scaled = False
         self._data: pd.DataFrame = pd.DataFrame()
         self._col_names: list = []
         self._index_name: str = ''
-        self._diff_interval: int = 0
-        self._diff_init_values: pd.DataFrame = pd.DataFrame()
 
     def load(self, file_path: str, index_col: str):
         """
@@ -144,7 +140,7 @@ class TimeSeries:
         for name in self._col_names:
             diff_op = DiffOperation()
             self._data[name] = diff_op.fit_transform(self._data[name], interval)
-            self._diff_operators[name] = diff_op
+            self._diff_operators[name].append(diff_op)
         self._data.dropna(inplace=True)
         return self.copy()
 
@@ -152,8 +148,10 @@ class TimeSeries:
         """
         Reverse the last difference operation.
         """
+        new_data = {}
         for name in self._col_names:
-            self._data[name] = self._diff_operators[name].invert(self._data[name])
+            new_data[name] = self._diff_operators[name].pop().invert(self._data[name])
+        self._data = pd.DataFrame(new_data)
         return self.copy()
 
     def inv_difference_serie(self, name: str, external_serie: pd.Series) -> pd.Series:
@@ -161,7 +159,8 @@ class TimeSeries:
         Reverse the difference of external data using difference values stored in the last difference
         operation made by this object.
         """
-
+        if name not in self._diff_operators.keys():
+            raise ValueError("Invalid operation")
         return self._diff_operators[name].partial_invert(external_serie)
 
     def scale(self):
@@ -206,8 +205,8 @@ class TimeSeries:
         new._col_names = self._col_names
         new._index_name = self._index_name
         new._scaler = self._scaler
-        new._diff_interval = self._diff_interval
-        new._diff_init_values = self._diff_init_values
+        new._is_scaled = self._is_scaled
+        new._diff_operators = self._diff_operators
         return new
 
     def plot_with(self, name: str, external_serie: pd.Series):
@@ -266,7 +265,7 @@ if __name__ == '__main__':
     t.load(file_path='/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv',
            index_col='Month')
     name = 'Red '
-    half = int(len(t[name]))
+    half = int(len(t[name])/2)
     # t.scale()
     # a = t.inv_difference_serie(name=name, external_serie=t[name][:half].copy())
     # a.plot()
@@ -274,18 +273,19 @@ if __name__ == '__main__':
     # t[name][:half].plot()
     # plt.show()
 
-    fig, ax = plt.subplots()
-    t[name].plot(ax=ax, label='original')
-    t.difference()
-    t[name].plot(ax=ax, label='after difference')
-    t.inv_difference()
-    t[name].plot(ax=ax, label='after inv difference')
-    plt.legend()
-    plt.show()
-    # a = t.inv_difference_serie(name, external_serie=t[name][10:half].copy())
-    # a.plot()
+    # fig, ax = plt.subplots()
+    # t[name].plot(ax=ax, label='original')
+    # t.difference()
+    # t[name].plot(ax=ax, label='after difference')
     # t.inv_difference()
-    # t[name][:half].plot(label='original')
+    # t[name].plot(ax=ax, label='after inv difference')
     # plt.legend()
     # plt.show()
+
+    t[name].plot()
+    t.difference(interval=1)
+    a = t.inv_difference_serie(name, external_serie=t[name][10:half].copy())
+    a.plot()
+    plt.legend()
+    plt.show()
 
