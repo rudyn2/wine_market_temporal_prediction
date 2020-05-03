@@ -3,8 +3,62 @@ from typing import List, Tuple, Dict
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from src.Utils.Utils import DiffOperation
 from sklearn.preprocessing import MinMaxScaler
+from datetime import timedelta
+
+
+class DiffOperation:
+
+    def __init__(self):
+        self._data_copy: pd.Series = pd.Series(dtype='float64')
+        self._interval: int = 0
+
+    def fit_transform(self, data: pd.Series, interval: int = 1) -> pd.Series:
+        self._data_copy = data
+        self._interval = interval
+        diff = []
+        indexes = []
+        for index in range(interval, len(data)):
+            value = data.iloc[index] - data.iloc[index - interval]
+            indexes.append(data.index[index])
+            diff.append(value)
+        return pd.Series(data=diff, index=indexes).dropna()
+
+    def invert(self, external_diff: pd.Series) -> pd.Series:
+
+        # assert len(external) == len(self._data_copy) - self._interval
+        assert type(external_diff.index) is pd.DatetimeIndex
+
+        inverted_indexes = [self._data_copy.index[i] for i in range(self._interval)]
+        inverted_values = [self._data_copy.iloc[i] for i in range(self._interval)]
+
+        for index in external_diff.index:
+            # datetime index
+            int_loc = list(external_diff.index).index(index)
+            value = external_diff.loc[index] + self._data_copy.iloc[int_loc - self._interval]
+            inverted_values.append(value)
+            inverted_indexes.append(index)
+        return pd.Series(data=inverted_values, index=inverted_indexes)
+
+    def _infer_step(self):
+
+        assert len(self._data_copy) > 2
+        time_step = self._data_copy.index[1] - self._data_copy.index[0]
+        return time_step
+
+    def partial_invert(self, external: pd.Series) -> pd.Series:
+
+        assert type(external.index) is pd.DatetimeIndex
+
+        t_step = self._infer_step()
+        inverted_indexes = []
+        inverted_values = []
+        for index in external.index:
+            # datetime index
+            value = external.loc[index] + self._data_copy.loc[index - self._interval * t_step]
+            inverted_values.append(value)
+            inverted_indexes.append(index)
+        return pd.Series(data=inverted_values, index=inverted_indexes)
 
 
 class TimeSeries:
@@ -91,6 +145,7 @@ class TimeSeries:
             diff_op = DiffOperation()
             self._data[name] = diff_op.fit_transform(self._data[name], interval)
             self._diff_operators[name] = diff_op
+        self._data.dropna(inplace=True)
         return self.copy()
 
     def inv_difference(self):
@@ -211,7 +266,7 @@ if __name__ == '__main__':
     t.load(file_path='/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv',
            index_col='Month')
     name = 'Red '
-    half = int(len(t[name])/2)
+    half = int(len(t[name]))
     # t.scale()
     # a = t.inv_difference_serie(name=name, external_serie=t[name][:half].copy())
     # a.plot()
@@ -221,15 +276,11 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()
     t[name].plot(ax=ax, label='original')
-    t.difference(interval=1)
+    t.difference()
     t[name].plot(ax=ax, label='after difference')
     t.inv_difference()
     t[name].plot(ax=ax, label='after inv difference')
     plt.legend()
-    plt.show()
-
-    t.inv_difference()
-    t[name].plot()
     plt.show()
     # a = t.inv_difference_serie(name, external_serie=t[name][10:half].copy())
     # a.plot()

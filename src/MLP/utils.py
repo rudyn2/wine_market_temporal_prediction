@@ -1,7 +1,10 @@
 import pandas as pd
 import torch
 import torch.nn as nn
-
+import numpy as np
+from random import random
+from datetime import datetime as dt
+from pandas import DatetimeIndex
 from src.MLP.mlp_models import WineDataset
 
 
@@ -17,3 +20,4 @@ def model_eval(trained_model: nn.Module, dataset: WineDataset):
             outputs = trained_model(temp_seq)
             y_pred.append(pd.Series(outputs.numpy(), index=true_pred_index))
     return pd.concat(y_pred)
+
