@@ -107,3 +107,7 @@ class TimeSeriesForecast(TimeSeries):
     def _proxy_predict(self, result, start: str, end: str) -> Tuple[pd.Series, pd.DataFrame]:
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def fit(self, name, **kwargs):
+        raise NotImplementedError
+

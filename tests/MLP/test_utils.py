@@ -28,12 +28,6 @@ class TestDiff(unittest.TestCase):
         difference = (self._serie.values - inverted.values).sum()
         self.assertAlmostEqual(difference, 0)
 
-    def test_external_diff(self):
-        diff_operator = DiffOperation()
-        diff_operator.fit_transform(data=self._serie)
-        inverted = diff_operator.partial_invert(self._external_serie)
-        # TODO: Check values and finish test
-
 
 if __name__ == '__main__':
     unittest.main()

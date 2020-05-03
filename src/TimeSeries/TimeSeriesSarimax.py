@@ -13,7 +13,7 @@ class TimeSeriesSarimax(TimeSeriesForecast):
     def __init__(self):
         super().__init__()
 
-    def fit(self, name: str, order: tuple, seasonal_order: tuple):
+    def fit(self, name: str, *, order: tuple = (1, 0, 0), seasonal_order: tuple = (1, 0, 0, 12)):
         """
         Fits a SARIMAX model to {name} temporal series given the order and seasonal_order parameters of the
         statsmodels.tsa.statespace.SARIMAX constructor.
@@ -45,7 +45,6 @@ if __name__ == '__main__':
     name = 'Red '
     # t.fit(name, order, seasonal_order)
     fig, ax = plt.subplots()
-
 
     # fig, ax = t.plot_forecast(name, start='1993-01-01', end='1995-02-01', forecast_label='Forecast')
     # t.plot_serie(name, ax, start='1992-01-01')

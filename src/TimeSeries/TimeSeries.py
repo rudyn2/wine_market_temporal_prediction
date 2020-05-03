@@ -265,27 +265,16 @@ if __name__ == '__main__':
     t.load(file_path='/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv',
            index_col='Month')
     name = 'Red '
-    half = int(len(t[name])/2)
-    # t.scale()
-    # a = t.inv_difference_serie(name=name, external_serie=t[name][:half].copy())
-    # a.plot()
-    # t.inv_scale()
-    # t[name][:half].plot()
-    # plt.show()
+    fig, ax = plt.subplots()
+    t[name].plot(ax=ax)
+    t.scale()
 
-    # fig, ax = plt.subplots()
-    # t[name].plot(ax=ax, label='original')
-    # t.difference()
-    # t[name].plot(ax=ax, label='after difference')
-    # t.inv_difference()
-    # t[name].plot(ax=ax, label='after inv difference')
-    # plt.legend()
-    # plt.show()
+    # we extract a part of the serie and sums 1 to each value
+    subt_copy = t[name].copy()
+    subt_copy = subt_copy[10:40]
 
-    t[name].plot()
-    t.difference(interval=1)
-    a = t.inv_difference_serie(name, external_serie=t[name][10:half].copy())
-    a.plot()
+    subt_inv_scaled = t.inv_scale_serie(name, subt_copy)
+    subt_inv_scaled.plot(ax=ax, label='external inv scaled')
+    t[name].plot(ax=ax, label='original scaled')
     plt.legend()
     plt.show()
-

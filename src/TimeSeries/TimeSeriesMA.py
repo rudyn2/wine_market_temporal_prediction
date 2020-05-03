@@ -12,7 +12,7 @@ class TimeSeriesMA(TimeSeriesForecast):
     def __init__(self):
         super().__init__()
 
-    def fit(self, name: str, order: int):
+    def fit(self, name: str, *,  order: int = 12):
         model = sm.tsa.ARMA(self[name], order=(2, order))
         results = model.fit(maxiter=200, disp=True)
         self._models[name] = model
@@ -30,12 +30,16 @@ if __name__ == '__main__':
     t = TimeSeriesMA()
     t.load("/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv", index_col='Month')
     name = 'Rose '
-    # t.plot_serie(ax=ax, name=name)
-    t.difference(interval=1)
+    fig, ax = plt.subplots()
     t.difference(interval=12)
-    t.fit(name, 12)
-    insample_mean, insample_interval = t.predict_in_sample(name)
-
-    fig, ax = t.plot_forecast(name, start='1993-01-01', end='1995-02-01', forecast_label='Forecast')
-    t.plot_serie(name, ax, start='1992-01-01')
+    t[name].plot(ax=ax, label='after first diff')
+    t.difference(interval=1)
+    t[name].plot(ax=ax, label='after second diff')
+    plt.legend()
     plt.show()
+    # t.fit(name, 12)
+    # insample_mean, insample_interval = t.predict_in_sample(name)
+    #
+    # fig, ax = t.plot_forecast(name, start='1993-01-01', end='1995-02-01', forecast_label='Forecast')
+    # t.plot_serie(name, ax, start='1992-01-01')
+    # plt.show()
