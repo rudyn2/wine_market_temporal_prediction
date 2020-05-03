@@ -1,4 +1,5 @@
 import itertools
+import os
 from typing import List
 
 import pandas as pd
@@ -92,13 +93,23 @@ class Utils:
 
         return params_tried, aic_metric
 
+    @staticmethod
+    def get_repo_path():
+        """
+        :return: local repository path independent of pc running program
+        """
+        repo_name = 'wine_market_temporal_prediction'
+        local_path = os.getcwd().split(repo_name)[0] + repo_name
+
+        return local_path
+
 
 if __name__ == "__main__":
+    repo_path = Utils.get_repo_path()
+    txt_path = os.path.join(repo_path, 'data/parameters_tried.txt')
+    data_path = os.path.join(repo_path, 'data/AustralianWines.csv')
     t = TimeSeries()
-    t.load(file_path=r'C:\Users\tomas\Documents\Semestres\Otoño 2020\EL5206 Laboratorio de Inteligencia Computacional '
-                     r'y Robótica\Laboratorios\Laboratorio '
-                     r'1\repo_lab1\wine_market_temporal_prediction\data/AustralianWines.csv',
-           index_col='Month')
+    t.load(file_path=data_path, index_col='Month')
 
     col_names = t.col_names()
     time_series = t[col_names[0]]
@@ -107,14 +118,8 @@ if __name__ == "__main__":
     m = [12]
     pdqPDQm = list(itertools.product(p, d, q, P, D, Q, m))
 
-    Utils.fit_SARIMA_txt(r'C:\Users\tomas\Documents\Semestres\Otoño 2020\EL5206 Laboratorio de Inteligencia '
-                         r'Computacional y Robótica\Laboratorios\Laboratorio '
-                         r'1\repo_lab1\wine_market_temporal_prediction\data/parameters_tried.txt',
-                         time_series, pdqPDQm, maxiter=25)
+    Utils.fit_SARIMA_txt(txt_path, time_series, pdqPDQm, maxiter=25)
 
-    best_params, best_aic = Utils.read_params_aic(r'C:\Users\tomas\Documents\Semestres\Otoño 2020\EL5206 Laboratorio '
-                                                  r'de Inteligencia Computacional y Robótica\Laboratorios\Laboratorio '
-                                                  r'1\repo_lab1\wine_market_temporal_prediction\data/parameters_tried'
-                                                  r'.txt', best=True)
+    best_params, best_aic = Utils.read_params_aic(txt_path, best=True)
 
 
