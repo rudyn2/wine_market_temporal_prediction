@@ -103,17 +103,24 @@ class TimeSeries:
 
     def inv_difference_serie(self, name: str, external_serie: pd.Series) -> pd.Series:
         """
-        Reverse the scale of external data using difference values stored in the last difference
+        Reverse the difference of external data using difference values stored in the last difference
         operation made by this object.
         """
+        # TODO: This method is not working. It should take a predicted external difference and integrate it using
+        #       the right constant.
+        if self._diff_interval == 0:
+            raise ValueError("Invalid operation.")
 
-        external_serie = external_serie.shift(self._diff_interval)
-        if self._is_scaled:
-            if self._diff_interval > 0:
-                return self.copy().inv_scale().inv_difference().inv_difference_serie(name, external_serie)
-            return self.copy().inv_scale().inv_difference_serie(name, external_serie)
-        original_serie = self._data[name].loc[external_serie.index]
-        return original_serie + external_serie
+        working_data = self.copy()
+        if working_data._is_scaled:
+            working_data.inv_scale()
+
+        interval_lag = self._diff_interval
+        if working_data._diff_interval > 0:
+            working_data.inv_difference()
+
+        inverted = external_serie + working_data[name].shift(-interval_lag)
+        return inverted
 
     def scale(self):
         """
@@ -128,6 +135,7 @@ class TimeSeries:
         Reverse the last scale operation.
         """
         self._data[:] = self._scaler.inverse_transform(X=self._data)
+        self._is_scaled = False
         return self.copy()
 
     def inv_scale_serie(self, name: str, external_serie: pd.Series) -> pd.Series:
@@ -211,8 +219,35 @@ class TimeSeries:
 
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     t = TimeSeries()
     t.load(file_path='/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv',
            index_col='Month')
-    t.scale()
-    t.inv_scale()
+    name = 'Red '
+    half = int(len(t[name])/2)
+    # t.scale()
+    # a = t.inv_difference_serie(name=name, external_serie=t[name][:half].copy())
+    # a.plot()
+    # t.inv_scale()
+    # t[name][:half].plot()
+    # plt.show()
+
+    fig, ax = plt.subplots()
+    t[name].plot(ax=ax, label='original')
+    t.difference(interval=1)
+    t[name].plot(ax=ax, label='after difference')
+    t.inv_difference()
+    t[name].plot(ax=ax, label='after inv difference')
+    plt.legend()
+    plt.show()
+
+    t.inv_difference()
+    t[name].plot()
+    plt.show()
+    # a = t.inv_difference_serie(name, external_serie=t[name][10:half].copy())
+    # a.plot()
+    # t.inv_difference()
+    # t[name][:half].plot(label='original')
+    # plt.legend()
+    # plt.show()
+
