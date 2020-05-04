@@ -75,10 +75,7 @@ if __name__ == '__main__':
     print(result)
     print(mc.groupsunique)
 
-    # step 4: identify groups
-    # step 5 (optional?): check ANOVA assumption 1: normal distribution of residuals using Shapiro-Wilk test
+    # step 5: check ANOVA assumption 1: normal distribution of residuals using Shapiro-Wilk test
     w, pvalue = stats.shapiro(model.resid)
     print(w, pvalue)
 
-    # step 6 (optional?): check ANOVA assumption 2: Homogeneity of variances using Levene or Bartlett test
-    # step 7: check ANOVA hypothesis on each group
