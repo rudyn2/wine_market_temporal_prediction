@@ -145,6 +145,7 @@ if __name__ == '__main__':
             MAPE_reg['train'][name] = mape(train_ts[name], train_sarimax_pred)
             MAPE_reg['val'][name] = mape(val_ts[name], val_sarimax_pred)
 
+
             sarimax_train_ts.plot_serie(name, ax=axs[i, 0])
             train_sarimax_pred.plot(ax=axs[i, 0], label='Predicción', title=name)
             axs[i, 0].legend()
@@ -162,7 +163,7 @@ if __name__ == '__main__':
             ax.label_outer()
 
         # plt.tight_layout()
-        plt.show()
+        fig.show()
 
         pprint(MAPE_reg, width=1)
     # endregion
