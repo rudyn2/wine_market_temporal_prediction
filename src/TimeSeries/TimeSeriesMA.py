@@ -13,15 +13,12 @@ class TimeSeriesMA(TimeSeriesForecast):
         super().__init__()
 
     def fit(self, name: str, *,  order: int = 12):
-        model = sm.tsa.ARMA(self[name], order=(2, order))
-        results = model.fit(maxiter=200, disp=True)
-        self._models[name] = model
-        self._results[name] = results
+        self._models[name] = f"MA({order})_{name}"
+        self._results[name] = self[name].rolling(order).mean().dropna()
 
     def _proxy_predict(self, name: str, start: str, end: str) -> Tuple[pd.Series, pd.DataFrame]:
         last_result = self._results[name]
-        predicted = last_result.predict(start=start, end=end)
-        return predicted, pd.DataFrame()
+        return last_result, pd.DataFrame()
 
 
 if __name__ == '__main__':
