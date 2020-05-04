@@ -1,10 +1,6 @@
 import pandas as pd
 import torch
 import torch.nn as nn
-import numpy as np
-from random import random
-from datetime import datetime as dt
-from pandas import DatetimeIndex
 from src.MLP.mlp_models import WineDataset
 
 
