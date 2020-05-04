@@ -121,5 +121,3 @@ if __name__ == "__main__":
     Utils.fit_SARIMA_txt(txt_path, time_series, pdqPDQm, maxiter=25)
 
     best_params, best_aic = Utils.read_params_aic(txt_path, best=True)
-
-

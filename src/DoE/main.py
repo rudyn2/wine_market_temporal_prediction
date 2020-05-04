@@ -6,9 +6,6 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from statsmodels.stats.multicomp import MultiComparison
 
-import seaborn as sns
-
-
 SMALL_SIZE = 16
 MEDIUM_SIZE = 16
 BIGGER_SIZE = 22
@@ -20,7 +17,6 @@ plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
 plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-
 
 cotton_tensile_strength = pd.DataFrame({
     '15%': [7, 7, 15, 11, 9],
@@ -78,4 +74,3 @@ if __name__ == '__main__':
     # step 5: check ANOVA assumption 1: normal distribution of residuals using Shapiro-Wilk test
     w, pvalue = stats.shapiro(model.resid)
     print(w, pvalue)
-

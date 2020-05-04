@@ -1,6 +1,6 @@
 import abc
 from typing import Tuple
-import numpy as np
+
 import pandas as pd
 
 from src.TimeSeries.TimeSeries import TimeSeries
@@ -110,4 +110,3 @@ class TimeSeriesForecast(TimeSeries):
     @abc.abstractmethod
     def fit(self, name, **kwargs):
         raise NotImplementedError
-

@@ -1,15 +1,15 @@
+import os
+
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-from sklearn.model_selection import train_test_split
-import os
-from src.Utils.Utils import Utils
 from torch.utils.data import DataLoader
+
 from src.MLP.mlp_models import MLP, WineDataset
-from src.MLP.utils import model_eval
-from src.TimeSeries.TimeSeriesAnalysis import TimeSeriesAnalysis
-import matplotlib.pyplot as plt
-from src.TimeSeries.TimeSeries import TimeSeries
 from src.MLP.train import train
+from src.MLP.utils import model_eval
+from src.TimeSeries.TimeSeries import TimeSeries
+from src.Utils.Utils import Utils
 from src.main import mape
 
 if __name__ == '__main__':
@@ -23,7 +23,6 @@ if __name__ == '__main__':
     losses = {}
 
     for i, name in enumerate(wine_names):
-
         t_train, t_valid = TimeSeries(), TimeSeries()
         t_train.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
         t_valid.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')
@@ -77,7 +76,7 @@ if __name__ == '__main__':
         print(f"{name} train mape: {mape(train_result_inverted, t_train[name])} | "
               f"valid mape: {mape(val_result_inverted, t_valid[name])}")
 
-        torch.save(model.state_dict(), os.path.join(repo_path, f'data/model_{name}.pt'))
+        # torch.save(model.state_dict(), os.path.join(repo_path, f'data/model_{name}.pt'))
 
         # plot train
         train_result_inverted.plot(ax=axs[i, 0], label='Observaciones')

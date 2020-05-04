@@ -11,21 +11,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+# MA example
+import statsmodels.api as sm
 import torch
 import torch.nn as nn
 from statsmodels.tools.eval_measures import mse
 
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
-from src.TimeSeries.TimeSeries import TimeSeries, DiffOperation
+from src.TimeSeries.TimeSeries import TimeSeries
 from src.TimeSeries.TimeSeriesSarimax import TimeSeriesSarimax
-from src.TimeSeries.TimeSeriesMA import TimeSeriesMA
-from datetime import datetime as dt
-# MA example
-from statsmodels.tsa.arima_model import ARIMA, ARMA
-import statsmodels.api as sm
-from random import random
-import os
 from src.Utils.Utils import Utils
 
 sns.set()
@@ -52,7 +47,7 @@ def mape(serie_x: pd.Series, serie_y: pd.Series) -> float:
     series_intersection_index = serie_x.index.intersection(serie_y.index)
     s1 = serie_x[series_intersection_index]
     s2 = serie_y[series_intersection_index]
-    mape_metric = np.sum(np.divide(100*np.abs(s1-s2), s1))/len(s1)
+    mape_metric = np.sum(np.divide(100 * np.abs(s1 - s2), s1)) / len(s1)
     return mape_metric
 
 
@@ -152,7 +147,6 @@ if __name__ == '__main__':
             MAPE_reg['train'][name] = mape(train_ts[name], train_sarimax_pred)
             MAPE_reg['val'][name] = mape(val_ts[name], val_sarimax_pred)
 
-
             sarimax_train_ts.plot_serie(name, ax=axs[i, 0])
             train_sarimax_pred.plot(ax=axs[i, 0], label='Predicción', title=name)
             axs[i, 0].legend()
@@ -177,7 +171,6 @@ if __name__ == '__main__':
 
     # region: MA
     if ma:
-
         t_train, t_valid = TimeSeries(), TimeSeries()
         t_train.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
         t_valid.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')

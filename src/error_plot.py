@@ -5,6 +5,7 @@ Shows the results for sarimax, MA and MLP models.
 """
 
 import os
+from pprint import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,8 +14,6 @@ import seaborn as sns
 import torch
 import torch.nn as nn
 
-from src.MLP.mlp_models import MLP, WineDataset
-from src.MLP.utils import model_eval
 from src.TimeSeries.TimeSeries import TimeSeries
 from src.TimeSeries.TimeSeriesSarimax import TimeSeriesSarimax
 from src.Utils.Utils import Utils
@@ -39,7 +38,7 @@ def histogram_error(serie_x: pd.Series, serie_y: pd.Series):
     s1 = serie_x[series_intersection_index]
     s2 = serie_y[series_intersection_index]
 
-    error = np.abs(s1-s2)
+    error = np.abs(s1 - s2)
     per_10 = np.percentile(error, 10)
     per_90 = np.percentile(error, 90)
 

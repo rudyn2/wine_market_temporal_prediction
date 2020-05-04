@@ -1,7 +1,8 @@
-from src.TimeSeries.TimeSeriesForecast import TimeSeriesForecast
-import statsmodels.api as sm
 from typing import Tuple
+
 import pandas as pd
+
+from src.TimeSeries.TimeSeriesForecast import TimeSeriesForecast
 
 
 class TimeSeriesMA(TimeSeriesForecast):
@@ -12,7 +13,7 @@ class TimeSeriesMA(TimeSeriesForecast):
     def __init__(self):
         super().__init__()
 
-    def fit(self, name: str, *,  order: int = 12):
+    def fit(self, name: str, *, order: int = 12):
         self._models[name] = f"MA({order})_{name}"
         self._results[name] = self[name].rolling(order).mean().dropna()
 

@@ -1,11 +1,11 @@
-from typing import List, Tuple, Dict
+from collections import defaultdict
+from copy import deepcopy
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from collections import defaultdict
-from copy import deepcopy
 
 
 class DiffOperation:
@@ -93,7 +93,8 @@ class TimeSeries:
         :param index_col:                       Name of the index column.
         """
         self._data = pd.read_csv(file_path)
-        self._col_names = [column_name for column_name in self._data.columns if column_name not in [index_col, 'Unnamed: 0']]
+        self._col_names = [column_name for column_name in self._data.columns if
+                           column_name not in [index_col, 'Unnamed: 0']]
         self._index_name = index_col
         self._preprocess()
 
@@ -300,6 +301,7 @@ class TimeSeries:
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+
     t = TimeSeries()
     t.load(file_path='/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv',
            index_col='Month')
