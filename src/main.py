@@ -21,6 +21,10 @@ from src.TimeSeries.TimeSeries import TimeSeries, DiffOperation
 from src.TimeSeries.TimeSeriesSarimax import TimeSeriesSarimax
 from src.TimeSeries.TimeSeriesMA import TimeSeriesMA
 from datetime import datetime as dt
+# MA example
+from statsmodels.tsa.arima_model import ARIMA, ARMA
+import statsmodels.api as sm
+from random import random
 import os
 from src.Utils.Utils import Utils
 
@@ -62,8 +66,8 @@ if __name__ == '__main__':
     name = 'Fortified'
     mlp_model_path = os.path.join(repo_path, f'data/model_{name}.pt')
     mlp = False
-    sarimax = True
-    ma = False
+    sarimax = False
+    ma = True
 
     # for auxiliary purposes
     train_ts, val_ts, total_ts = TimeSeries(), TimeSeries(), TimeSeries()
@@ -127,7 +131,7 @@ if __name__ == '__main__':
 
     # region: SARIMAX
     if sarimax:
-        names = entire_ts.col_names()
+        names = total_ts.col_names()
         fig, axs = plt.subplots(nrows=len(names), ncols=2, figsize=(15, 24), dpi=180, sharey='row')
         MAPE_reg = {'train': {}, 'val': {}}
 
@@ -173,44 +177,64 @@ if __name__ == '__main__':
     # region: MA
     if ma:
 
+        t_train, t_valid = TimeSeries(), TimeSeries()
+        t_train.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
+        t_valid.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')
+
+        # fit model
+        model = sm.tsa.statespace.SARIMAX(t_train[name], order=(0, 1, 12), seasonal_order=(0, 0, 0, 0))
+        # model = ARMA(t_train[name], order=(0, 12))
+        model_fit = model.fit(disp=False)
+
+        # make prediction
+        train_ma_pred = model_fit.predict(start=t_train[name].index[0], end=t_train[name].index[-1])
+        val_ma_pred = model_fit.predict(start=t_valid[name].index[0], end=t_valid[name].index[-1])
+
+        _, axs = plt.subplots(nrows=1, ncols=2, sharey='row', figsize=(16, 8))
+
         # plot results
-        _, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 8))
+        t_train[name].plot(ax=axs[0], label='true')
+        train_ma_pred.plot(ax=axs[0], label='predicted')
+        axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Entrenamiento')
 
-        total_ts_copy = total_ts.copy()[name]
-        total_ts = total_ts[name]
-
-        diff_1, diff_2 = DiffOperation(), DiffOperation()
-        total_ts = diff_1.fit_transform(total_ts, interval=1)
-        january_diff_1, february_diff_1 = total_ts['1994-01-01'], total_ts['1994-02-01']
-        total_ts = diff_2.fit_transform(total_ts, interval=12)
-
-        # moving average
-        ma_pred = total_ts.rolling(12).mean().dropna()
-
-        # moving average extended to january and february
-        january_diff_2 = total_ts['1994-01-01':'1994-12-01'].mean()
-        february_diff_2 = (total_ts['1994-01-02':'1994-12-01'].sum() + january_diff_2)/12
-        ma_pred_copy = ma_pred.copy()
-        ma_pred[dt(1995, 1, 1)] = january_diff_2
-        ma_pred[dt(1995, 2, 1)] = february_diff_2
-
-        # plotting diff
-        ma_pred.plot(ax=axs[0], label='Predicción')
-        total_ts.plot(ax=axs[0], label='Observaciones')
-        axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Predicción de serie doblemente diferenciada')
-
-        # inverting moving average
-        ma_pred_copy = diff_2.invert(ma_pred_copy)
-        ma_pred_copy = diff_1.invert(ma_pred_copy)
-        january = (january_diff_2 + january_diff_1) + total_ts_copy['1994-01-01']
-        february = (february_diff_2 + february_diff_1) + total_ts_copy['1994-02-01']
-        ma_pred_copy[dt(1995, 1, 1)] = january
-        ma_pred_copy[dt(1995, 2, 1)] = february
-
-        ma_pred_copy.plot(ax=axs[1], label='Predicción')
-        total_ts_copy.plot(ax=axs[1], label='Observaciones')
-        axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Predicción')
+        # plot results
+        t_valid[name].plot(ax=axs[1], label='true')
+        val_ma_pred.plot(ax=axs[1], label='forecast')
+        axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Validación')
 
         plt.legend()
         plt.show()
+
+        # # moving average
+        # ma_pred = total_ts_diff_diff.rolling(12).mean().dropna()
+        # ma_pred_without_diff = diff_2.partial_invert(ma_pred)
+        # ma_pred_without_diff = diff_1.partial_invert(ma_pred_without_diff)
+        #
+        # # moving average extended to january and february
+        # january_diff_2 = total_ts_diff_diff['1994-01-01':'1994-12-01'].mean()
+        # february_diff_2 = (total_ts_diff_diff['1994-01-02':'1994-12-01'].sum() + january_diff_2)/12
+        # ma_pred[dt(1995, 1, 1)] = january_diff_2
+        # ma_pred[dt(1995, 2, 1)] = february_diff_2
+        #
+        # # plotting double diff and its estimation using MA
+        # ma_pred.plot(ax=axs[0], label='Predicción')
+        # total_ts_diff_diff.plot(ax=axs[0], label='Observaciones')
+        # axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Predicción de serie doblemente diferenciada')
+        #
+        # # inverting moving average
+        # january_diff = january_diff_2 + total_ts_diff['1994-01-01']
+        # february_diff = february_diff_2 + total_ts_diff['1994-02-01']
+        # january = january_diff + total_ts['1994-01-01']
+        # february = february_diff + total_ts['1994-02-01']
+        #
+        # # extending
+        # ma_pred_without_diff[dt(1995, 1, 1)] = january
+        # ma_pred_without_diff[dt(1995, 2, 1)] = february
+        #
+        # ma_pred_without_diff.plot(ax=axs[1], label='Predicción')
+        # total_ts.plot(ax=axs[1], label='Observaciones')
+        # axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Predicción')
+        #
+        # plt.legend()
+        # plt.show()
     # endregion
