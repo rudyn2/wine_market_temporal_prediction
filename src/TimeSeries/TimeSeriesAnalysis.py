@@ -157,4 +157,4 @@ if __name__ == '__main__':
     t.load("/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv", index_col='Month')
     t.report_stationary(verbose=False)
     t.difference(interval=1)
-    t.report_stationary()
+    t.report_stationary(verbose=True)

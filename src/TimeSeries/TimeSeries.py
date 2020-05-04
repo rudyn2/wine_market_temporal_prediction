@@ -18,7 +18,7 @@ class DiffOperation:
         self._data_copy = data.copy(deep=True)
 
     def fit_transform(self, data: pd.Series, interval: int = 1) -> pd.Series:
-        self._data_copy = data
+        self._data_copy = data.copy()
         self._interval = interval
         return self.transform(data)
 
@@ -97,18 +97,6 @@ class TimeSeries:
                            column_name not in [index_col, 'Unnamed: 0']]
         self._index_name = index_col
         self._preprocess()
-
-    def load_dataframe(self, df: pd.DataFrame):
-        """
-        Loads an external dataframe. It is assumed that external df is preprocessed.
-
-        :param df:                              External pandas dataframe
-        """
-        assert type(df.index) == pd.DatetimeIndex
-        self._col_names = [column_name for column_name in self._data.columns]
-        self._data = df
-        for name in self._diff_operators.keys():
-            self._diff_operators[name][-1].fit(df[name])
 
     def _preprocess(self):
         """
@@ -297,25 +285,3 @@ class TimeSeries:
     @property
     def data(self):
         return self._data
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
-    t = TimeSeries()
-    t.load(file_path='/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv',
-           index_col='Month')
-    name = 'Red '
-    fig, ax = plt.subplots()
-    t[name].plot(ax=ax)
-    t.fit_scale()
-
-    # we extract a part of the serie and sums 1 to each value
-    subt_copy = t[name].copy()
-    subt_copy = subt_copy[10:40]
-
-    subt_inv_scaled = t.inv_scale_serie(name, subt_copy)
-    subt_inv_scaled.plot(ax=ax, label='external inv scaled')
-    t[name].plot(ax=ax, label='original scaled')
-    plt.legend()
-    plt.show()

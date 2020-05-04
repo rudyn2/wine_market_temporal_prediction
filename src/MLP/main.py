@@ -79,13 +79,13 @@ if __name__ == '__main__':
         # torch.save(model.state_dict(), os.path.join(repo_path, f'data/model_{name}.pt'))
 
         # plot train
-        train_result_inverted.plot(ax=axs[i, 0], label='Observaciones')
-        t_train[name].plot(ax=axs[i, 0], label='Predicción', title=name)
+        train_result_inverted.plot(ax=axs[i, 0], label='Predicción')
+        t_train[name].plot(ax=axs[i, 0], label='Observaciones', title=name)
         axs[i, 0].legend()
 
         # plot valid
-        val_result_inverted.plot(ax=axs[i, 1], label='Observaciones')
-        t_valid[name].plot(ax=axs[i, 1], label='Predicción', title=name)
+        val_result_inverted.plot(ax=axs[i, 1], label='Predicción')
+        t_valid[name].plot(ax=axs[i, 1], label='Observaciones', title=name)
         axs[i, 1].legend()
 
     axs[0, 0].set(title=f'Entrenamiento\n{wine_names[0]}')
