@@ -9,8 +9,8 @@ from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.train import train
 from src.MLP.utils import model_eval
 from src.TimeSeries.TimeSeries import TimeSeries
+from src.Utils.Loss import TimeSeriesErrorMetric as TSEM
 from src.Utils.Utils import Utils
-from src.main import mape
 
 if __name__ == '__main__':
     repo_path = Utils.get_repo_path()
@@ -73,8 +73,8 @@ if __name__ == '__main__':
         t_train.inv_scale()
         t_train.inv_difference()
 
-        print(f"{name} train mape: {mape(train_result_inverted, t_train[name])} | "
-              f"valid mape: {mape(val_result_inverted, t_valid[name])}")
+        print(f"{name} train mape: {TSEM.MAPETimeSeries(train_result_inverted, t_train[name])} | "
+              f"valid mape: {TSEM.MAPETimeSeries(val_result_inverted, t_valid[name])}")
 
         # torch.save(model.state_dict(), os.path.join(repo_path, f'data/model_{name}.pt'))
 

@@ -1,50 +1,42 @@
 #!/usr/bin/env python
 
-from datetime import datetime as dt
+"""
+visualization.py: a script for visualization of the input data of this work, in specific, the monthly sales
+                 of 6 types of australian wines, between 1980 and 1994. The sales are given in
+                 thousands of liters.
+"""
+
+import os
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 
+from src.TimeSeries.TimeSeries import TimeSeries
+from src.Utils.Utils import Utils
+
 sns.set()
+Utils.set_plot_config()
 
-SMALL_SIZE = 16
-MEDIUM_SIZE = 16
-BIGGER_SIZE = 22
+if __name__ == '__main__':
+    repo_path = Utils.get_repo_path()
 
-plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
-plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
-plt.rc('axes', labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
-plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
-plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
-plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
-plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    new_names = {
+        'Fortified': 'Fortificado',
+        'Red ': 'Tinto',
+        'Rose ': 'Rosa',
+        'sparkling ': 'Espumoso',
+        'Sweet white': 'Blanco dulce',
+        'Dry white': 'Blanco seco'
+    }
 
-# importing files
-raw_data = pd.read_csv("../data/AustralianWines.csv")
+    data = TimeSeries()
+    data.load(os.path.join(repo_path, 'data/AustralianWines.csv'), index_col='Month')
 
-# pre-processing
-raw_data['Month'] = raw_data['Month'].apply(lambda x: dt.strptime(str(x), '%b-%y'))
-wine_names = [column_name for column_name in raw_data.columns if column_name != "Month"]
-for wine_name in wine_names:
-    raw_data[wine_name] = pd.to_numeric(raw_data[wine_name], errors='coerce')
+    names = data.col_names()
 
-# renaming to spanish
-new_names = {
-    'Fortified': 'Fortificado',
-    'Red ': 'Tinto',
-    'Rose ': 'Rosa',
-    'sparkling ': 'Espumoso',
-    'Sweet white': 'Blanco dulce',
-    'Dry white': 'Blanco seco'
-}
-
-raw_data.rename(columns=new_names, inplace=True)
-wine_names = list(new_names.values())
-
-# first visualization
-fig, axs = plt.subplots(3, 2, dpi=300, figsize=(16, 12))
-for index, ax in enumerate(axs.reshape(-1)):
-    ax.plot(raw_data['Month'], raw_data[wine_names[index]])
-    ax.set(xlabel='Fecha', ylabel='Miles de litros', title=wine_names[index])
-plt.show()
+    # first visualization
+    fig, axs = plt.subplots(3, 2, dpi=300, figsize=(16, 12))
+    for i, (name, ax) in enumerate(zip(names, axs.reshape(-1))):
+        data[name].plot(ax=ax, title=new_names[name])
+    plt.suptitle('Ventas de tipos de vinos', fontsize='xx-large')
+    plt.show()

@@ -4,6 +4,7 @@ import pandas as pd
 import statsmodels.api as sm
 
 from src.TimeSeries.TimeSeriesForecast import TimeSeriesForecast
+from src.Utils.Utils import Utils
 
 
 class TimeSeriesSarimax(TimeSeriesForecast):
@@ -13,6 +14,20 @@ class TimeSeriesSarimax(TimeSeriesForecast):
 
     def __init__(self):
         super().__init__()
+        self._params_file_paths: dict = {}
+
+    def load_params_file(self, name: str, params_path: str) -> None:
+        """
+        load the path to params tried file
+        """
+        self._params_file_paths[name] = params_path
+
+    def fit_on_best(self, name: str):
+        """
+        Fits a SARIMA model with the best params found in params file given by AIC.
+        """
+        best_params, _ = Utils.read_params_aic(self._params_file_paths[name], best=True)
+        self.fit(name, order=best_params[:3], seasonal_order=best_params[3:])
 
     def fit(self, name: str, *, order: tuple = (1, 0, 0), seasonal_order: tuple = (1, 0, 0, 12)):
         """
@@ -37,15 +52,16 @@ class TimeSeriesSarimax(TimeSeriesForecast):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    import os
+
+    repo_path = Utils.get_repo_path()
+    name = 'Red '
 
     t = TimeSeriesSarimax()
-    t.load("/Users/rudy/Documents/wine_market_temporal_prediction/data/AustralianWines.csv", index_col='Month')
-    order = (1, 2, 2)
-    seasonal_order = (2, 2, 2, 12)
-    name = 'Red '
-    # t.fit(name, order, seasonal_order)
-    fig, ax = plt.subplots()
+    t.load(os.path.join(repo_path, 'data/AustralianWines.csv'), index_col='Month')
 
-    # fig, ax = t.plot_forecast(name, start='1993-01-01', end='1995-02-01', forecast_label='Forecast')
-    # t.plot_serie(name, ax, start='1992-01-01')
+    t.fit(name, order=(1, 2, 2), seasonal_order=(2, 2, 2, 12))
+
+    fig, ax = t.plot_forecast(name, start='1993-01-01', end='1995-02-01', forecast_label='Forecast')
+    t.plot_serie(name, ax, start='1992-01-01')
     plt.show()

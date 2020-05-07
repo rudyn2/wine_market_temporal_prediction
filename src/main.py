@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 main.py:
 
@@ -9,150 +11,126 @@ from pprint import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import seaborn as sns
-# MA example
-import statsmodels.api as sm
 import torch
 import torch.nn as nn
-from statsmodels.tools.eval_measures import mse
 
 from src.MLP.mlp_models import MLP, WineDataset
 from src.MLP.utils import model_eval
-from src.TimeSeries.TimeSeries import TimeSeries
 from src.TimeSeries.TimeSeriesSarimax import TimeSeriesSarimax
+from src.Utils.Loss import TimeSeriesErrorMetric as TSEM
 from src.Utils.Utils import Utils
 
 sns.set()
-
-SMALL_SIZE = 16
-MEDIUM_SIZE = 16
-BIGGER_SIZE = 22
-
-plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
-plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
-plt.rc('axes', labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
-plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
-plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
-plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
-plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-
-
-def _mse(serie_x: pd.Series, serie_y: pd.Series) -> float:
-    series_intersection_index = serie_x.index.intersection(serie_y.index)
-    return mse(serie_x[series_intersection_index], serie_y[series_intersection_index])
-
-
-def mape(serie_x: pd.Series, serie_y: pd.Series) -> float:
-    series_intersection_index = serie_x.index.intersection(serie_y.index)
-    s1 = serie_x[series_intersection_index]
-    s2 = serie_y[series_intersection_index]
-    mape_metric = np.sum(np.divide(100 * np.abs(s1 - s2), s1)) / len(s1)
-    return mape_metric
+Utils.set_plot_config()
 
 
 if __name__ == '__main__':
-
     repo_path = Utils.get_repo_path()
     np.random.seed(42)
     input_size = 12
     output_size = 1
     test_size = 1 / 8
-    name = 'Fortified'
-    mlp_model_path = os.path.join(repo_path, f'data/model_{name}.pt')
-    mlp = False
+    mlp = True
     sarimax = False
-    ma = True
+    ma = False
 
-    # for auxiliary purposes
-    train_ts, val_ts, total_ts = TimeSeries(), TimeSeries(), TimeSeries()
-    train_ts.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
-    val_ts.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')
-    total_ts.load(os.path.join(repo_path, 'data/AustralianWines.csv'), index_col='Month')
-
+    train_ts, val_ts, total_ts = Utils.train_test_data(os.path.join(repo_path, 'data/AustralianWines.csv'))
+    names = total_ts.col_names()
     # region: MLP
     if mlp:
-        t_train, t_valid = TimeSeries(), TimeSeries()
-        t_train.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
-        t_valid.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')
+        fig, axs = plt.subplots(nrows=len(names), ncols=2, figsize=(15, 24), dpi=180, sharey='row')
+        MSE_reg = {'train': {}, 'val': {}}
 
-        t_train.difference()
-        t_train.fit_scale()
-        X_train, y_train, x_train_index, y_train_index = t_train.timeseries_to_supervised(name=name,
-                                                                                          width=input_size,
-                                                                                          pred_width=output_size)
+        for i, name in enumerate(names):
+            mlp_model_path = os.path.join(repo_path, f'data/model_{name}.pt')
+            t_train, t_valid, _ = Utils.train_test_data(os.path.join(repo_path, 'data/AustralianWines.csv'))
 
-        t_valid.difference()
-        X_valid, y_valid, x_val_index, y_val_index = t_train.scale(t_valid).timeseries_to_supervised(name=name,
-                                                                                                     width=input_size,
-                                                                                                     pred_width=output_size)
+            t_train.difference()
+            t_train.fit_scale()
+            X_train, y_train, x_train_index, y_train_index = t_train.timeseries_to_supervised(name=name,
+                                                                                              width=input_size,
+                                                                                              pred_width=output_size)
 
-        train_dataset = WineDataset(x=torch.from_numpy(X_train).float(), y=torch.from_numpy(y_train).float(),
-                                    x_index=x_train_index, y_index=y_train_index)
-        valid_dataset = WineDataset(x=torch.from_numpy(X_valid).float(), y=torch.from_numpy(y_valid).float(),
-                                    x_index=x_val_index, y_index=y_val_index)
+            t_valid.difference()
+            X_valid, y_valid, x_val_index, y_val_index = t_train.scale(t_valid).timeseries_to_supervised(name=name,
+                                                                                                         width=input_size,
+                                                                                                         pred_width=output_size)
 
-        model: nn.Module = MLP(input_size, output_size)
-        model.load_state_dict(torch.load(mlp_model_path))
+            train_dataset = WineDataset(x=torch.from_numpy(X_train).float(), y=torch.from_numpy(y_train).float(),
+                                        x_index=x_train_index, y_index=y_train_index)
+            valid_dataset = WineDataset(x=torch.from_numpy(X_valid).float(), y=torch.from_numpy(y_valid).float(),
+                                        x_index=x_val_index, y_index=y_val_index)
 
-        train_mlp_ts = model_eval(model, dataset=train_dataset)
-        val_mlp_ts = model_eval(model, dataset=valid_dataset)
+            model_mlp: nn.Module = MLP(input_size, output_size)
+            model_mlp.load_state_dict(torch.load(mlp_model_path))
 
-        # using t properties to reverse the operations
-        train_mlp_ts = t_train.inv_scale_serie(name=name, external_serie=train_mlp_ts)
-        train_mlp_ts = t_train.inv_difference_serie(name=name, external_serie=train_mlp_ts).dropna()
+            train_mlp_ts = model_eval(model_mlp, dataset=train_dataset)
+            val_mlp_ts = model_eval(model_mlp, dataset=valid_dataset)
 
-        # using t properties to reverse the operations
-        val_mlp_ts = t_valid.inv_scale_serie(name=name, external_serie=val_mlp_ts)
-        val_mlp_ts = t_valid.inv_difference_serie(name=name, external_serie=val_mlp_ts)
+            # using t properties to reverse the operations
+            train_mlp_ts = t_train.inv_scale_serie(name=name, external_serie=train_mlp_ts)
+            train_mlp_ts = t_train.inv_difference_serie(name=name, external_serie=train_mlp_ts).dropna()
 
-        _, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 8))
+            # using t properties to reverse the operations
+            val_mlp_ts = t_valid.inv_scale_serie(name=name, external_serie=val_mlp_ts)
+            val_mlp_ts = t_valid.inv_difference_serie(name=name, external_serie=val_mlp_ts)
 
-        # plot results
-        train_mlp_ts.plot(ax=axs[0], label='Predicción')
-        train_ts.plot_serie(name, ax=axs[0])
-        axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Entrenamiento')
+            # using t properties to reverse the operations
+            val_mlp_ts = t_valid.inv_scale_serie(name=name, external_serie=val_mlp_ts)
+            val_mlp_ts = t_valid.inv_difference_serie(name=name, external_serie=val_mlp_ts)
 
-        # plot results
-        val_mlp_ts.plot(ax=axs[1], label='Predicción')
-        val_ts.plot_serie(name, ax=axs[1])
-        axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Validación')
+            # plot results
+            train_mlp_ts.plot(ax=axs[i, 0], label='Predicción', title=name)
+            train_ts.plot_serie(name, ax=axs[i, 0])
+            axs[i, 0].legend()
 
+            # plot results
+            val_mlp_ts.plot(ax=axs[i, 1], label='Predicción')
+            val_ts.plot_serie(name, ax=axs[i, 1])
+            axs[i, 1].legend()
+
+            MSE_reg['train'][name] = TSEM.MSETimeSeries(train_ts[name], train_mlp_ts)
+            MSE_reg['val'][name] = TSEM.MSETimeSeries(val_ts[name], val_mlp_ts)
+
+        axs[0, 0].set(title=f'Entrenamiento\n{names[0]}')
+        axs[0, 1].set(title=f'Validación\n{names[0]}')
+
+        for ax in axs.flat:
+            ax.set(xlabel='Fecha', ylabel='Miles de litros')
+        for ax in axs.flat:
+            ax.label_outer()
+        plt.suptitle('Resultados con MLP')
         plt.show()
-        print("MLP Metrics")
-        print(f"Train MSE: {_mse(train_ts[name], train_mlp_ts):.4f} | Test MSE: {_mse(val_ts[name], val_mlp_ts):.4f}")
 
+        print("MLP Metrics")
+        pprint(MSE_reg, width=1)
     # endregion: MLP
 
-    # region: SARIMAX
+    # region: SARIMA
     if sarimax:
         names = total_ts.col_names()
         fig, axs = plt.subplots(nrows=len(names), ncols=2, figsize=(15, 24), dpi=180, sharey='row')
         MAPE_reg = {'train': {}, 'val': {}}
 
+        sarima_train_ts = TimeSeriesSarimax()
+        sarima_train_ts.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
         for i, name in enumerate(names):
-            sarimax_train_ts = TimeSeriesSarimax()
-            sarimax_train_ts.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
+            sarima_train_ts.load_params_file(name, os.path.join(repo_path, f'data/parameters_tried_{name.strip()}.txt'))
+            sarima_train_ts.fit_on_best(name)
+            train_sarima_pred, _ = sarima_train_ts.predict_in_sample(name)
+            val_sarima_pred, _ = sarima_train_ts.predict_out_of_sample(name,
+                                                                       start=val_ts[name].index[0],
+                                                                       end=val_ts[name].index[-1])
+            MAPE_reg['train'][name] = TSEM.MAPETimeSeries(train_ts[name], train_sarima_pred)
+            MAPE_reg['val'][name] = TSEM.MAPETimeSeries(val_ts[name], val_sarima_pred)
 
-            txt_path = os.path.join(repo_path, f'data/parameters_tried_{name.strip()}.txt')
-            best_params, _ = Utils.read_params_aic(txt_path, best=True)
-
-            order = best_params[:3]
-            seasonal_order = best_params[3:]
-            sarimax_train_ts.fit(name, order=order, seasonal_order=seasonal_order)
-            train_sarimax_pred, train_sarimax_pred_ci = sarimax_train_ts.predict_in_sample(name)
-            val_sarimax_pred, val_sarimax_pred_ci = sarimax_train_ts.predict_out_of_sample(name,
-                                                                                           start=val_ts[name].index[0],
-                                                                                           end=val_ts[name].index[-1])
-            MAPE_reg['train'][name] = mape(train_ts[name], train_sarimax_pred)
-            MAPE_reg['val'][name] = mape(val_ts[name], val_sarimax_pred)
-
-            sarimax_train_ts.plot_serie(name, ax=axs[i, 0])
-            train_sarimax_pred.plot(ax=axs[i, 0], label='Predicción', title=name)
+            sarima_train_ts.plot_serie(name, ax=axs[i, 0])
+            train_sarima_pred.plot(ax=axs[i, 0], label='Predicción', title=name)
             axs[i, 0].legend()
 
             val_ts.plot_serie(name, ax=axs[i, 1])
-            val_sarimax_pred.plot(ax=axs[i, 1], label='Predicción', title=name)
+            val_sarima_pred.plot(ax=axs[i, 1], label='Predicción', title=name)
             axs[i, 1].legend()
 
         axs[0, 0].set(title=f'Entrenamiento\n{names[0]}')
@@ -162,73 +140,37 @@ if __name__ == '__main__':
             ax.set(xlabel='Fecha', ylabel='Miles de litros')
         for ax in axs.flat:
             ax.label_outer()
+        plt.suptitle('Resultados con SARIMA')
+        plt.show()
 
-        # plt.tight_layout()
-        fig.show()
-
+        print('SARIMA Metrics')
         pprint(MAPE_reg, width=1)
     # endregion
 
     # region: MA
     if ma:
-        t_train, t_valid = TimeSeries(), TimeSeries()
-        t_train.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
-        t_valid.load(os.path.join(repo_path, 'data/AustralianWinesTest.csv'), index_col='Month')
+        name = 'Fortified'
 
-        # fit model
-        model = sm.tsa.statespace.SARIMAX(t_train[name], order=(0, 1, 12), seasonal_order=(0, 0, 0, 0))
-        # model = ARMA(t_train[name], order=(0, 12))
-        model_fit = model.fit(disp=False)
+        ma_train_ts = TimeSeriesSarimax()
+        ma_train_ts.load(os.path.join(repo_path, 'data/AustralianWinesTrain.csv'), index_col='Month')
+        ma_train_ts.fit(name, order=(0, 2, 12), seasonal_order=(0, 0, 0, 0))
 
-        # make prediction
-        train_ma_pred = model_fit.predict(start=t_train[name].index[0], end=t_train[name].index[-1])
-        val_ma_pred = model_fit.predict(start=t_valid[name].index[0], end=t_valid[name].index[-1])
+        train_ma_pred, _ = ma_train_ts.predict_in_sample(name)
+        val_ma_pred, _ = ma_train_ts.predict_out_of_sample(name,
+                                                           start=val_ts[name].index[0],
+                                                           end=val_ts[name].index[-1])
 
-        _, axs = plt.subplots(nrows=1, ncols=2, sharey='row', figsize=(16, 8))
+        fig, axs = plt.subplots(nrows=1, ncols=2, sharey='row', figsize=(16, 8))
 
-        # plot results
-        t_train[name].plot(ax=axs[0], label='true')
+        train_ts[name].plot(ax=axs[0], label='true')
         train_ma_pred.plot(ax=axs[0], label='predicted')
         axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Entrenamiento')
 
-        # plot results
-        t_valid[name].plot(ax=axs[1], label='true')
+        val_ts[name].plot(ax=axs[1], label='true')
         val_ma_pred.plot(ax=axs[1], label='forecast')
         axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Validación')
 
         plt.legend()
+        plt.suptitle('Resultados con MA y 2-diff')
         plt.show()
-
-        # # moving average
-        # ma_pred = total_ts_diff_diff.rolling(12).mean().dropna()
-        # ma_pred_without_diff = diff_2.partial_invert(ma_pred)
-        # ma_pred_without_diff = diff_1.partial_invert(ma_pred_without_diff)
-        #
-        # # moving average extended to january and february
-        # january_diff_2 = total_ts_diff_diff['1994-01-01':'1994-12-01'].mean()
-        # february_diff_2 = (total_ts_diff_diff['1994-01-02':'1994-12-01'].sum() + january_diff_2)/12
-        # ma_pred[dt(1995, 1, 1)] = january_diff_2
-        # ma_pred[dt(1995, 2, 1)] = february_diff_2
-        #
-        # # plotting double diff and its estimation using MA
-        # ma_pred.plot(ax=axs[0], label='Predicción')
-        # total_ts_diff_diff.plot(ax=axs[0], label='Observaciones')
-        # axs[0].set(xlabel='Fecha', ylabel='Miles de litros', title='Predicción de serie doblemente diferenciada')
-        #
-        # # inverting moving average
-        # january_diff = january_diff_2 + total_ts_diff['1994-01-01']
-        # february_diff = february_diff_2 + total_ts_diff['1994-02-01']
-        # january = january_diff + total_ts['1994-01-01']
-        # february = february_diff + total_ts['1994-02-01']
-        #
-        # # extending
-        # ma_pred_without_diff[dt(1995, 1, 1)] = january
-        # ma_pred_without_diff[dt(1995, 2, 1)] = february
-        #
-        # ma_pred_without_diff.plot(ax=axs[1], label='Predicción')
-        # total_ts.plot(ax=axs[1], label='Observaciones')
-        # axs[1].set(xlabel='Fecha', ylabel='Miles de litros', title='Predicción')
-        #
-        # plt.legend()
-        # plt.show()
     # endregion

@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+
+"""
+grid_search_sarima.py: this script is used for grid-search of optimal parameters for a SARIMA model of prediction
+                      of a TimeSeries. It reads from a file saved in data/ folder and saves parameters already tried
+                      alongside their AIC metric, for comparative motives. Finally, prints the best parameters among
+                      tried.
+"""
+
 import itertools
 import os
 
@@ -5,18 +14,16 @@ from src.TimeSeries.TimeSeries import TimeSeries
 from src.Utils.Utils import Utils
 
 if __name__ == "__main__":
-    repo_name = 'wine_market_temporal_prediction'
-    local_path = os.getcwd().split(repo_name)[0] + repo_name
-    data_path = os.path.join(local_path, 'data/AustralianWines.csv')
+    repo_name = Utils.get_repo_path()
 
-    t = TimeSeries()
-    t.load(file_path=data_path, index_col='Month')
+    ts = TimeSeries()
+    ts.load(os.path.join(repo_name, 'data/AustralianWines.csv'), index_col='Month')
 
-    col_names = t.col_names()
+    col_names = ts.col_names()
     wine_sel = col_names[5]
-    time_series = t[wine_sel]
+    time_series = ts[wine_sel]
 
-    txt_path = os.path.join(local_path, f'data/parameters_tried_{wine_sel.strip()}.txt')
+    txt_path = os.path.join(repo_name, f'data/parameters_tried_{wine_sel.strip()}.txt')
 
     print('Columns names: \n', *col_names)
     print('Grid Search for wine type: ', wine_sel)

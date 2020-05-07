@@ -2,6 +2,7 @@ import itertools
 import os
 from typing import List
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.api as sm
 
@@ -102,6 +103,46 @@ class Utils:
         local_path = os.getcwd().split(repo_name)[0] + repo_name
 
         return local_path
+
+    @staticmethod
+    def train_test_data(file_path_b: str, idx_col: str = 'Month'):
+        """
+        It loads the train and test data of a time series alongside the full time series. It assumes that the files
+        are in the same folder specified by *file_path_b* and the names of the file are computed as:
+            train_path: file_path_b - '.csv' + 'Train.csv'
+            test_path:  file_path_b - '.csv' + 'Test.csv'
+        Then it also specifies the index column *idx_col*.
+
+        :param file_path_b:     path to the full TimeSeries CSV file.
+        :param idx_col:         index column of the data
+        :return:                a tuple of
+                                            1) train data TimeSeries object
+                                            2) test data TimeSeries object
+                                            3) full data TimeSeries object
+        """
+        base_path = file_path_b.replace('.csv', '')
+        train_path = base_path + 'Train.csv'
+        test_path = base_path + 'Test.csv'
+
+        train_ts, val_ts, full_ts = TimeSeries(), TimeSeries(), TimeSeries()
+        train_ts.load(train_path, index_col=idx_col)
+        val_ts.load(test_path, index_col=idx_col)
+        full_ts.load(file_path_b, index_col=idx_col)
+
+        return train_ts, val_ts, full_ts
+
+    @staticmethod
+    def set_plot_config(s: int = 16, m: int = 16, b: int = 22):
+        """
+        Set global sizes for plots in three possible sizes given by small *s*, medium *m* and big *b*
+        """
+        plt.rc('font', size=s)          # controls default text sizes
+        plt.rc('axes', titlesize=s)     # fontsize of the axes title
+        plt.rc('axes', labelsize=m)     # fontsize of the x and y labels
+        plt.rc('xtick', labelsize=s)    # fontsize of the tick labels
+        plt.rc('ytick', labelsize=s)    # fontsize of the tick labels
+        plt.rc('legend', fontsize=s)    # legend fontsize
+        plt.rc('figure', titlesize=b)   # fontsize of the figure title
 
 
 if __name__ == "__main__":
